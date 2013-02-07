@@ -16,6 +16,11 @@ The idea is to combine Restful API with a local sql database.
 Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 
 	exports.definition = {	
+		"columns": { //example
+			"id":"INTEGER PRIMARY KEY AUTOINCREMENT",
+			"image":"text",
+			"title":"text"
+		},
 		config: {
 			"URL": "http://example.com/api/modelname",
 			"adapter": {

@@ -1,5 +1,4 @@
-var _ = require('alloy/underscore')._,
-	util = require('alloy/sync/util');
+var _ = require('alloy/underscore')._, util = require('alloy/sync/util');
 
 //until this issue is fixed: https://jira.appcelerator.org/browse/TIMOB-11752
 var Alloy = require("alloy"), Backbone = Alloy.Backbone;
@@ -10,9 +9,9 @@ var ALLOY_DB_DEFAULT = '_alloy_';
 var ALLOY_ID_DEFAULT = 'alloy_id';
 
 var cache = {
-	config: {},
-	Model: {},
-	URL: null
+	config : {},
+	Model : {},
+	URL : null
 };
 
 // The sql-specific migration object, which is the main parameter
@@ -83,7 +82,7 @@ function Migrator(config, transactionDb) {
 		var columns = [];
 		var found = false;
 		for (var k in config.columns) {
-			k === this.idAttribute && (found = true);
+			k === this.idAttribute && ( found = true);
 			columns.push(k + " " + this.column(config.columns[k]));
 		}
 
@@ -109,7 +108,7 @@ function Migrator(config, transactionDb) {
 		// get arrays of column names, values, and value placeholders
 		var found = false;
 		for (var key in columnValues) {
-			key === this.idAttribute && (found = true);
+			key === this.idAttribute && ( found = true);
 			columns.push(key);
 			values.push(columnValues[key]);
 			qs.push('?');
@@ -146,210 +145,207 @@ function Migrator(config, transactionDb) {
 	};
 }
 
-
-
 function apiCall(_options, _callback) {
-	if(Ti.Network.online){
-		//we are online - talk with Rest API	
-		
+	if (Ti.Network.online) {
+		//we are online - talk with Rest API
+
 		var xhr = Ti.Network.createHTTPClient({
-		    timeout: _options.timeout || 5000
+			timeout : _options.timeout || 5000
 		});
-	
+
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
-		
+
 		xhr.onload = function() {
-		    _callback({
-		        'success': true,
-		        'responseText': xhr.responseText || null,
-		        'responseData': xhr.responseData || null
-		    });
+			_callback({
+				'success' : true,
+				'responseText' : xhr.responseText || null,
+				'responseData' : xhr.responseData || null
+			});
 		};
-	
+
 		//Handle error
 		xhr.onerror = function() {
-		    _callback({
-		        'success': false,
-		        'responseText': xhr.responseText
-		    });
-		    Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
+			_callback({
+				'success' : false,
+				'responseText' : xhr.responseText
+			});
+			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 		}
 		for (var header in _options.headers) {
 			xhr.setRequestHeader(header, _options.headers[header]);
 		}
-		
-		if (_options.beforeSend){
+
+		if (_options.beforeSend) {
 			_options.beforeSend(xhr);
-		}   
+		}
 		xhr.send(_options.data || null);
 	} else {
 		//we are offline
 		_callback({
-		    'success' : false,
-		    'responseText' : ""
-		});	
+			'success' : false,
+			'responseText' : ""
+		});
 		Ti.API.error('[SQL REST API] apiCall ERROR: Offline Mode');
 	}
 }
 
 function Sync(method, model, opts) {
-	var table =  model.config.adapter.collection_name,
-		columns = model.config.columns,
-		dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT,
-		resp = null,
-		db;
-	
-	
-	//REST API 
+	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
+
+	//REST API
 	var methodMap = {
-        'create' : 'POST',
-        'read' : 'GET',
-        'update' : 'PUT',
-        'delete' : 'DELETE'
-    };
+		'create' : 'POST',
+		'read' : 'GET',
+		'update' : 'PUT',
+		'delete' : 'DELETE'
+	};
 
-    var type = methodMap[method];
-    var params = _.extend({}, opts);
-    params.type = type;
-	
-    //set default headers
-    params.headers = params.headers || {};
+	var type = methodMap[method];
+	var params = _.extend({}, opts);
+	params.type = type;
 
-    // We need to ensure that we have a base url.
-    if (!params.url) {
-        params.url = (model.config.URL || model.url());
-        if (!params.url) {
-            Ti.API.error("[SQL REST API] ERROR: NO BASE URL");
-            return;
-        }
-    }
+	//set default headers
+	params.headers = params.headers || {};
 
-    // For older servers, emulate JSON by encoding the request into an HTML-form.
-    if (Alloy.Backbone.emulateJSON) {
-        params.contentType = 'application/x-www-form-urlencoded';
-        params.processData = true;
-        params.data = params.data ? {
-            model : params.data
-        } : {};
-    }
+	// We need to ensure that we have a base url.
+	if (!params.url) {
+		params.url = (model.config.URL || model.url());
+		if (!params.url) {
+			Ti.API.error("[SQL REST API] ERROR: NO BASE URL");
+			return;
+		}
+	}
 
-    // For older servers, emulate HTTP by mimicking the HTTP method with `_method`
-    // And an `X-HTTP-Method-Override` header.
-    if (Alloy.Backbone.emulateHTTP) {
-        if (type === 'PUT' || type === 'DELETE') {
-            if (Alloy.Backbone.emulateJSON)
-                params.data._method = type;
-            params.type = 'POST';
-            params.beforeSend = function(xhr) {
-                params.headers['X-HTTP-Method-Override'] = type
-            };
-        }
-    }
+	// For older servers, emulate JSON by encoding the request into an HTML-form.
+	if (Alloy.Backbone.emulateJSON) {
+		params.contentType = 'application/x-www-form-urlencoded';
+		params.processData = true;
+		params.data = params.data ? {
+			model : params.data
+		} : {};
+	}
+
+	// For older servers, emulate HTTP by mimicking the HTTP method with `_method`
+	// And an `X-HTTP-Method-Override` header.
+	if (Alloy.Backbone.emulateHTTP) {
+		if (type === 'PUT' || type === 'DELETE') {
+			if (Alloy.Backbone.emulateJSON)
+				params.data._method = type;
+			params.type = 'POST';
+			params.beforeSend = function(xhr) {
+				params.headers['X-HTTP-Method-Override'] = type
+			};
+		}
+	}
 
 	//json data transfers
-    params.headers['Content-Type'] = 'application/json';
-	
+	params.headers['Content-Type'] = 'application/json';
+
 	switch (method) {
 		case 'create':
 			// convert to string for API call
 			params.data = JSON.stringify(model.toJSON());
-			
-            apiCall(params, function(_response) {
-                if (_response.success) {
-                    var data = JSON.parse(_response.responseText); //Rest API should return a new model id.
-                    resp = createSQL(data);
-                    _.isFunction(params.success) && params.success(resp);
-                } else {
-                	//offline or error
-                	resp = createSQL();
-                    _.isFunction(params.error) && params.error(resp);
-                }
-            });
+
+			apiCall(params, function(_response) {
+				if (_response.success) {
+					var data = JSON.parse(_response.responseText);
+					//Rest API should return a new model id.
+					resp = createSQL(data);
+					_.isFunction(params.success) && params.success(resp);
+				} else {
+					//offline or error
+					resp = createSQL();
+					_.isFunction(params.error) && params.error(resp);
+				}
+			});
 			break;
 		case 'read':
 			if (model.id) {
-				params.url = params.url + '/' + model.id; 
-            }
-            
-            apiCall(params, function(_response) {
-                if (_response.success) {
-                    var data = JSON.parse(_response.responseText);
-                    var currentModels = sqlCurrentModels();
-                    for (var i in data) {
-                    	if(_.indexOf(currentModels, Number(data[model.idAttribute])) != -1){
-                    		updateSQL(data[i]); //item exists - update it
-                    	} else {
-                    		createSQL(data[i]); //write remote data to local sql
-                    	}
-                    }
-					
-                    resp = readSQL();
-                    _.isFunction(params.success) && params.success(resp);
-        			model.trigger("fetch");
-                } else {
-                	//error or offline - read local data
-                    resp = readSQL();
-                    _.isFunction(params.error) && params.error(resp);
-                }
-            });
-			
-			
+				params.url = params.url + '/' + model.id;
+			}
+
+			apiCall(params, function(_response) {
+				if (_response.success) {
+					var data = JSON.parse(_response.responseText);
+					var currentModels = sqlCurrentModels();
+					for (var i in data) {
+						if (_.indexOf(currentModels, Number(data[model.idAttribute])) != -1) {
+							updateSQL(data[i]);
+							//item exists - update it
+						} else {
+							createSQL(data[i]);
+							//write remote data to local sql
+						}
+					}
+
+					resp = readSQL();
+					_.isFunction(params.success) && params.success(resp);
+					model.trigger("fetch");
+				} else {
+					//error or offline - read local data
+					resp = readSQL();
+					_.isFunction(params.error) && params.error(resp);
+				}
+			});
+
 			break;
 
-		case 'update':		
+		case 'update':
 			if (!model.id) {
-                params.error(null, "MISSING MODEL ID");
-                Ti.API.error("[SQL REST API] ERROR: MISSING MODEL ID");
-                return;
-            }
+				params.error(null, "MISSING MODEL ID");
+				Ti.API.error("[SQL REST API] ERROR: MISSING MODEL ID");
+				return;
+			}
 
-            // setup the url & data
-            params.url = params.url + '/' + model.id;
-            params.data = JSON.stringify(model.toJSON());
-            
-            apiCall(params, function(_response) {
-                if (_response.success) {
-                    var data = JSON.parse(_response.responseText);
-                    resp = updateSQL(data);
-                    _.isFunction(params.success) && params.success(resp);
-                } else {
-                	//error or offline - use local data
-                	resp = updateSQL();
-                    _.isFunction(params.error) && params.error(resp);
-                }
-            });
+			// setup the url & data
+			params.url = params.url + '/' + model.id;
+			params.data = JSON.stringify(model.toJSON());
+
+			apiCall(params, function(_response) {
+				if (_response.success) {
+					var data = JSON.parse(_response.responseText);
+					resp = updateSQL(data);
+					_.isFunction(params.success) && params.success(resp);
+				} else {
+					//error or offline - use local data
+					resp = updateSQL();
+					_.isFunction(params.error) && params.error(resp);
+				}
+			});
 			break;
 		case 'delete':
 			if (!model.id) {
-                params.error(null, "MISSING MODEL ID");
-                Ti.API.error("[SQL REST API] ERROR: MISSING MODEL ID");
-                return;
-            }
-            params.url = params.url + '/' + model.id;
+				params.error(null, "MISSING MODEL ID");
+				Ti.API.error("[SQL REST API] ERROR: MISSING MODEL ID");
+				return;
+			}
+			params.url = params.url + '/' + model.id;
 
-            apiCall(params, function(_response) {
-                if (_response.success) {
-                    var data = JSON.parse(_response.responseText);
-                    resp = deleteSQL();
-                    _.isFunction(params.success) && params.success(resp);
-                } else {
-                	resp = deleteSQL();
-                    _.isFunction(params.error) && params.error(resp);
-                }
-            });
+			apiCall(params, function(_response) {
+				if (_response.success) {
+					var data = JSON.parse(_response.responseText);
+					resp = deleteSQL();
+					_.isFunction(params.success) && params.success(resp);
+				} else {
+					resp = deleteSQL();
+					_.isFunction(params.error) && params.error(resp);
+				}
+			});
 			break;
 	}
-    
-    /////////////////////////////////////////////
-    //SQL INTERFACE
-    /////////////////////////////////////////////
-    function createSQL(data){
+
+	/////////////////////////////////////////////
+	//SQL INTERFACE
+	/////////////////////////////////////////////
+	function createSQL(data) {
 		var attrObj = {};
-		
-		if(data){ //use data from remote server
-			model.set(data, {silent:true});
-		} 
+
+		if (data) {//use data from remote server
+			model.set(data, {
+				silent : true
+			});
+		}
 		// Use idAttribute to account for something other then "id"
 		// being used for the model's id.
 		if (!model.id) {
@@ -360,16 +356,18 @@ function Sync(method, model, opts) {
 
 				// make it silent so it doesn't fire an unnecessary
 				// Backbone change event
-				model.set(attrObj, {silent:true});
+				model.set(attrObj, {
+					silent : true
+				});
 			} else {
 				// idAttribute not assigned by alloy. Leave it empty and
 				// allow sqlite to process as null, which is the
 				// expected value for an AUTOINCREMENT field.
 				model.id = null;
 			}
-        }
+		}
 
-        // Create arrays for insert query
+		// Create arrays for insert query
 		var names = [], values = [], q = [];
 		for (var k in columns) {
 			names.push(k);
@@ -381,102 +379,104 @@ function Sync(method, model, opts) {
 		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
 		var sqlId = "SELECT last_insert_rowid();";
 
-        // execute the query and return the response
-        db = Ti.Database.open(dbName);
-        db.execute('BEGIN;');
-        db.execute(sqlInsert, values);
+		// execute the query and return the response
+		db = Ti.Database.open(dbName);
+		db.execute('BEGIN;');
+		db.execute(sqlInsert, values);
 
-        // get the last inserted id
-        if (model.id === null) {
-        	var rs = db.execute(sqlId);
-        	if (rs.isValidRow()) {
-        		model.id = rs.field(0);
-        		attrObj[model.idAttribute] = model.id;
+		// get the last inserted id
+		if (model.id === null) {
+			var rs = db.execute(sqlId);
+			if (rs.isValidRow()) {
+				model.id = rs.field(0);
+				attrObj[model.idAttribute] = model.id;
 
 				// make it silent so it doesn't fire an unnecessary
 				// Backbone change event
-				model.set(attrObj, {silent:true});
-        	} else {
-        		Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
-        	}
-    	}
+				model.set(attrObj, {
+					silent : true
+				});
+			} else {
+				Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
+			}
+		}
 
-        db.execute('COMMIT;');
-        db.close();
+		db.execute('COMMIT;');
+		db.close();
 
-        return model.toJSON();	
-    }
-    
-	function readSQL(){
+		return model.toJSON();
+	}
+
+	function readSQL() {
 		var sql = opts.query || 'SELECT * FROM ' + table;
-	
+
 		// execute the select query
 		db = Ti.Database.open(dbName);
 		var rs = db.execute(sql);
-	
+
 		var len = 0;
 		var values = [];
-	
+
 		// iterate through all queried rows
-		while(rs.isValidRow())
-		{
+		while (rs.isValidRow()) {
 			var o = {};
-	        var fc = 0;
-	
-	        // TODO: https://jira.appcelerator.org/browse/ALOY-459
+			var fc = 0;
+
+			// TODO: https://jira.appcelerator.org/browse/ALOY-459
 			fc = _.isFunction(rs.fieldCount) ? rs.fieldCount() : rs.fieldCount;
-	
+
 			// create list of rows returned from query
-			_.times(fc,function(c){
+			_.times(fc, function(c) {
 				var fn = rs.fieldName(c);
 				o[fn] = rs.fieldByName(fn);
 			});
 			values.push(o);
-	
+
 			len++;
 			rs.next();
 		}
-	
+
 		// close off db after read query
 		rs.close();
 		db.close();
-	
+
 		// shape response based on whether it's a model or collection
 		model.length = len;
 		return len === 1 ? resp = values[0] : resp = values;
-	}   
-	
-	function updateSQL(data){
-		if(data){ //use data from remote server
-			model.set(data, {silent:true});
-		} 
-		
+	}
+
+	function updateSQL(data) {
+		if (data) {//use data from remote server
+			model.set(data, {
+				silent : true
+			});
+		}
+
 		var names = [];
 		var values = [];
 		var q = [];
 
 		// create the list of columns
-		for (var k in columns)
-		{
-			names.push(k+'=?');
+		for (var k in columns) {
+			names.push(k + '=?');
 			values.push(model.get(k));
 			q.push('?');
 		}
 
 		// compose the update query
-		var sql = 'UPDATE '+table+' SET '+names.join(',')+' WHERE ' + model.idAttribute + '=?';
-	    values.push(model.id);
+		var sql = 'UPDATE ' + table + ' SET ' + names.join(',') + ' WHERE ' + model.idAttribute + '=?';
+		values.push(model.id);
 
-	    // execute the update
-	    db = Ti.Database.open(dbName);
-		db.execute(sql,values);
+		// execute the update
+		db = Ti.Database.open(dbName);
+		db.execute(sql, values);
 		db.close();
 
 		return model.toJSON();
-	} 
-	
-	function deleteSQL(){
-		var sql = 'DELETE FROM '+table+' WHERE ' + model.idAttribute + '=?';
+	}
+
+	function deleteSQL() {
+		var sql = 'DELETE FROM ' + table + ' WHERE ' + model.idAttribute + '=?';
 		// execute the delete
 		db = Ti.Database.open(dbName);
 		db.execute(sql, model.id);
@@ -485,15 +485,14 @@ function Sync(method, model, opts) {
 		model.id = null;
 		return model.toJSON();
 	}
-	
-	function sqlCurrentModels(){
-		var sql = 'SELECT '+ model.idAttribute +' FROM '+table;
+
+	function sqlCurrentModels() {
+		var sql = 'SELECT ' + model.idAttribute + ' FROM ' + table;
 		db = Ti.Database.open(dbName);
 		var rs = db.execute(sql);
 		var output = [];
-		while(rs.isValidRow())
-		{
-			output.push(rs.fieldByName(model.idAttribute)); 
+		while (rs.isValidRow()) {
+			output.push(rs.fieldByName(model.idAttribute));
 			rs.next();
 		}
 		rs.close();
@@ -502,8 +501,6 @@ function Sync(method, model, opts) {
 	}
 
 }
-
-
 
 // Gets the current saved migration
 function GetMigrationFor(dbname, table) {
@@ -538,16 +535,16 @@ function Migrate(Model) {
 	// the last migration if it's not present. If we still don't have a
 	// migration number after that, that means there are none. There's
 	// no migrations to perform.
-	var targetNumber = typeof config.adapter.migration === 'undefined' ||
-		config.adapter.migration === null ? lastMigration.id : config.adapter.migration;
-	if (typeof targetNumber === 'undefined' || targetNumber === null) {
+	var targetNumber = typeof config.adapter.migration === 'undefined' || config.adapter.migration === null ? lastMigration.id : config.adapter.migration;
+	if ( typeof targetNumber === 'undefined' || targetNumber === null) {
 		var tmpDb = Ti.Database.open(config.adapter.db_name);
 		migrator.db = tmpDb;
 		migrator.createTable(config);
 		tmpDb.close();
 		return;
 	}
-	targetNumber = targetNumber + ''; // ensure that it's a string
+	targetNumber = targetNumber + '';
+	// ensure that it's a string
 
 	// Create the migration tracking table if it doesn't already exist.
 	// Get the current saved migration number.
@@ -559,10 +556,12 @@ function Migrate(Model) {
 	if (currentNumber === targetNumber) {
 		return;
 	} else if (currentNumber && currentNumber > targetNumber) {
-		direction = 0; // rollback
+		direction = 0;
+		// rollback
 		migrations.reverse();
 	} else {
-		direction = 1;  // upgrade
+		direction = 1;
+		// upgrade
 	}
 
 	// open db for our migration transaction
@@ -582,11 +581,19 @@ function Migrate(Model) {
 			// if upgrading, skip migrations higher than the target
 			// if rolling back, skip migrations lower than the target
 			if (direction) {
-				if (context.id > targetNumber) { break; }
-				if (context.id <= currentNumber) { continue; }
+				if (context.id > targetNumber) {
+					break;
+				}
+				if (context.id <= currentNumber) {
+					continue;
+				}
 			} else {
-				if (context.id <= targetNumber) { break; }
-				if (context.id > currentNumber) { continue; }
+				if (context.id <= targetNumber) {
+					break;
+				}
+				if (context.id > currentNumber) {
+					continue;
+				}
 			}
 
 			// execute the appropriate migration function
@@ -646,8 +653,7 @@ function installDatabase(config) {
 	// make sure we have a unique id field
 	if (config.adapter.idAttribute) {
 		if (!_.contains(_.keys(config.columns), config.adapter.idAttribute)) {
-			throw 'config.adapter.idAttribute "' + config.adapter.idAttribute + '" not found in list of columns for table "' + table + '"\n' +
-			      'columns: [' + _.keys(config.columns).join(',') + ']';
+			throw 'config.adapter.idAttribute "' + config.adapter.idAttribute + '" not found in list of columns for table "' + table + '"\n' + 'columns: [' + _.keys(config.columns).join(',') + ']';
 		}
 	} else {
 		Ti.API.info('No config.adapter.idAttribute specified for table "' + table + '"');
@@ -694,7 +700,7 @@ module.exports.afterModelCreate = function(Model, name) {
 	}
 
 	// create and migrate the Model class
-	Model || (Model = {});
+	Model || ( Model = {});
 	Model.prototype.idAttribute = Model.prototype.config.adapter.idAttribute;
 	Migrate(Model);
 
@@ -704,4 +710,4 @@ module.exports.afterModelCreate = function(Model, name) {
 	return Model;
 };
 
-module.exports.sync = Sync;
+module.exports.sync = Sync; 
