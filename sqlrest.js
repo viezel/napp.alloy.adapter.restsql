@@ -162,6 +162,7 @@ function apiCall(_options, _callback) {
 				'responseText' : xhr.responseText || null,
 				'responseData' : xhr.responseData || null
 			});
+			
 		};
 
 		//Handle error
@@ -190,7 +191,7 @@ function apiCall(_options, _callback) {
 	}
 }
 
-function Sync(method, model, opts) {
+function Sync(model, method, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
 
 	//REST API
@@ -241,7 +242,7 @@ function Sync(method, model, opts) {
 
 	//json data transfers
 	params.headers['Content-Type'] = 'application/json';
-
+	
 	switch (method) {
 		case 'create':
 			// convert to string for API call
@@ -377,7 +378,6 @@ function Sync(method, model, opts) {
 
 		// Assemble create query
 		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
-		var sqlId = "SELECT last_insert_rowid();";
 
 		// execute the query and return the response
 		db = Ti.Database.open(dbName);
@@ -386,6 +386,7 @@ function Sync(method, model, opts) {
 
 		// get the last inserted id
 		if (model.id === null) {
+			var sqlId = "SELECT last_insert_rowid();";
 			var rs = db.execute(sqlId);
 			if (rs.isValidRow()) {
 				model.id = rs.field(0);
@@ -451,7 +452,7 @@ function Sync(method, model, opts) {
 				silent : true
 			});
 		}
-
+		
 		var names = [];
 		var values = [];
 		var q = [];
