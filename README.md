@@ -6,37 +6,32 @@ napp.alloy.adapter.restsql
 SQL & RestAPI Sync Adapter for Titanium Alloy Framework. 
 The idea is to combine Restful API with a local sql database. 
 
-## Status
-
-**WORK IN PROGRESS - NOT COMPLETE.**
-
 
 ## How To Use
 
 Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 
-	exports.definition = {	
-		"columns": { //example
-			"id":"INTEGER PRIMARY KEY AUTOINCREMENT",
-			"image":"text",
-			"title":"text"
-		},
-		config: {
-			"URL": "http://example.com/api/modelname",
-			"adapter": {
-				"type": "restsql",
-				"collection_name": "mymodelname"
-				"idAttribute": "id"
+	exports.definition = {
+		config : {
+			"columns": {
+				"id":"INTEGER PRIMARY KEY",
+				"title":"text"
+			},
+			"URL": "http://urlPathToRestAPIServer.com/api/modelname",
+			"adapter" : {
+				"type" : "sqlrest",
+				"collection_name" : "modelname",
+				"idAttribute" : "id"
 			}
-		},		
-		extendModel: function(Model) {		
+		},
+		extendModel : function(Model) {
 			_.extend(Model.prototype, {});
 			return Model;
-		},	
-		extendCollection: function(Collection) {		
+		},
+		extendCollection : function(Collection) {
 			_.extend(Collection.prototype, {});
 			return Collection;
-		}		
+		}
 	}
 
 Then add the `restsql.js` to `PROJECT_FOLDER/assets/alloy/sync/`. Create the folders if they dont exist. 
