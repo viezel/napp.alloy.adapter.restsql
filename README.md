@@ -18,6 +18,7 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 				"title":"text"
 			},
 			"URL": "http://urlPathToRestAPIServer.com/api/modelname",
+			//"debug": 1, 
 			"adapter" : {
 				"type" : "sqlrest",
 				"collection_name" : "modelname",
@@ -35,6 +36,41 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 	}
 
 Then add the `restsql.js` to `PROJECT_FOLDER/assets/alloy/sync/`. Create the folders if they dont exist. 
+
+Use the `debug` property in the above example to get logs printed with sql statements and server respose to debug your usage of the sqlrest adapter.
+
+
+## Special properties
+
+### localOnly
+
+If you want to load/save data from the local SQL database, then add the `localOnly` property.
+
+
+	collection.fetch({
+		localOnly:true
+	});
+
+
+### Extended SQL interface
+
+You can perform a local query, and use a bunch of SQL commands without having to write the actual query. The query is also support btw.
+Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except, like, likeor*
+
+	collection.fetch({
+		data: {
+			where:{
+				category_id: 2
+			},
+			orderBy:"title",
+			offset:20,
+			limit:20,
+			like: {
+				description: "search query"
+			}
+		},
+		localOnly:true
+	});
 
 ## Author
 
