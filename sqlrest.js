@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.11 
+ * @version 0.1.12
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -283,6 +283,11 @@ function Sync(model, method, opts) {
 			if (model.id) {
 				params.url = params.url + '/' + model.id;
 			}
+			
+			if(params.urlparams){
+				params.url += "?"+encodeData(params.urlparams);
+			}
+			
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
 				Ti.API.info(params);
@@ -329,11 +334,21 @@ function Sync(model, method, opts) {
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = JSON.parse(_response.responseText);
-					resp = updateSQL(data);
+					var currentModels = sqlCurrentModels();
+					if (_.indexOf(currentModels, Number(data[model.idAttribute])) != -1) {
+						resp = updateSQL(data); //item exists - update it
+					} else {
+						resp = createSQL(data); //write remote data to local sql
+					}
 					_.isFunction(params.success) && params.success(resp);
 				} else {
 					//error or offline - use local data
-					resp = updateSQL();
+					var currentModels = sqlCurrentModels();
+					if (_.indexOf(currentModels, Number(model.id)) != -1) {
+						resp = updateSQL(); //item exists - update it
+					} else {
+						resp = createSQL(); //write remote data to local sql
+					}
 					_.isFunction(params.error) && params.error(resp);
 				}
 			});
@@ -584,6 +599,14 @@ function Sync(model, method, opts) {
 /////////////////////////////////////////////
 // SQL HELPERS
 /////////////////////////////////////////////
+
+var encodeData = function(obj) {
+	var str = [];
+	for(var p in obj)
+		str.push(Ti.Network.encodeURIComponent(p) + "=" + Ti.Network.encodeURIComponent(obj[p]));
+	return str.join("&"); 
+}
+	
 
 function _valueType(value) {
 	if ( typeof value == 'string') {
