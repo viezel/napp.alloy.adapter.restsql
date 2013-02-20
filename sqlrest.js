@@ -200,7 +200,7 @@ function apiCall(_options, _callback) {
 	}
 }
 
-function Sync(model, method, opts) {
+function Sync(method, model, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
 	model.idAttribute = model.config.adapter.idAttribute; //fix for collection
 	var DEBUG = model.config.debug;
