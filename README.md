@@ -15,14 +15,18 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 		config : {
 			"columns": {
 				"id":"INTEGER PRIMARY KEY",
-				"title":"text"
+				"title":"text",
+				"modified":text
 			},
 			"URL": "http://urlPathToRestAPIServer.com/api/modelname",
 			//"debug": 1, 
 			"adapter" : {
 				"type" : "sqlrest",
 				"collection_name" : "modelname",
-				"idAttribute" : "id"
+				"idAttribute" : "id",
+				
+				//optimise the amount of data transfer from remote server to app
+				"lastModifiedColumn": "modified"
 			}
 		},
 		extendModel : function(Model) {
@@ -42,6 +46,18 @@ Use the `debug` property in the above example to get logs printed with sql state
 
 ## Special properties
 
+### Last Modified
+
+Save a timestamp for each model in the database. Use the `lastModifiedColumn` property in the adapter config to send the HTTP Header "Last-Modifed" with the newest timestamp. This is great for improving the amount of data send from the remote server to the app. 
+
+	"adapter" : {
+		...
+		"lastModifiedColumn": "modified"
+	},
+
+This is tell the adapter which column to store a timestamp every time a model has been changed. 
+
+
 ### localOnly
 
 If you want to load/save data from the local SQL database, then add the `localOnly` property.
@@ -58,7 +74,7 @@ You can perform a local query, and use a bunch of SQL commands without having to
 Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except, like, likeor*
 
 	collection.fetch({
-		data: {
+		sql: {
 			where:{
 				category_id: 2
 			},
@@ -71,6 +87,25 @@ Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except,
 		},
 		localOnly:true
 	});
+
+
+## Changelog
+
+**v0.1.14**
+Added `Last Modified` for data transfer optimisation & debug mode
+
+**v0.1.13**
+Updated for Alloy 1.0.0.GA
+
+**v0.1.12**
+Added `urlparams` and improved `update` rest method
+
+**v0.1.11**
+Advanced sql interface and localOnly added. 
+
+**v0.1.10**
+Init 
+
 
 ## Author
 

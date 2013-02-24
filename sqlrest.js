@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.12
+ * @version 0.1.14
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -10,6 +10,7 @@ var _ = require('alloy/underscore')._, util = require('alloy/sync/util');
 
 //until this issue is fixed: https://jira.appcelerator.org/browse/TIMOB-11752
 var Alloy = require("alloy"), Backbone = Alloy.Backbone;
+var moment = require('alloy/moment');
 
 // The database name used when none is specified in the
 // model configuration.
@@ -34,123 +35,89 @@ var cache = {
 //               mapped back to Backbone.js for its update and
 //               delete operations.
 function Migrator(config, transactionDb) {
-	this.db = transactionDb;
-	this.dbname = config.adapter.db_name;
-	this.table = config.adapter.collection_name;
-	this.idAttribute = config.adapter.idAttribute;
-
-	//TODO: normalize columns at compile time - https://jira.appcelerator.org/browse/ALOY-222
-	this.column = function(name) {
-		// split into parts to keep additional column characteristics like
-		// autoincrement, primary key, etc...
-		var parts = name.split(/\s+/);
-		var type = parts[0]
-		switch(type.toLowerCase()) {
-			case 'string':
-			case 'varchar':
-			case 'date':
-			case 'datetime':
-				Ti.API.warn('"' + type + '" is not a valid sqlite field, using TEXT instead');
-			case 'text':
-				type = 'TEXT';
-				break;
-			case 'int':
-			case 'tinyint':
-			case 'smallint':
-			case 'bigint':
-			case 'boolean':
-				Ti.API.warn('"' + type + '" is not a valid sqlite field, using INTEGER instead');
-			case 'integer':
-				type = 'INTEGER';
-				break;
-			case 'double':
-			case 'float':
-			case 'decimal':
-			case 'number':
-				Ti.API.warn('"' + name + '" is not a valid sqlite field, using REAL instead');
-			case 'real':
-				type = 'REAL';
-				break;
-			case 'blob':
-				type = 'BLOB';
-				break;
-			case 'null':
-				type = 'NULL';
-				break;
-			default:
-				type = 'TEXT';
-				break;
-		}
-		parts[0] = type;
-		return parts.join(' ');
-	};
-
-	this.createTable = function(config) {
-		// compose the create query
-		var columns = [];
-		var found = false;
-		for (var k in config.columns) {
-			k === this.idAttribute && ( found = true);
-			columns.push(k + " " + this.column(config.columns[k]));
-		}
-
-		// add the id field if it wasn't specified
-		if (!found && this.idAttribute === ALLOY_ID_DEFAULT) {
-			columns.push(ALLOY_ID_DEFAULT + ' TEXT');
-		}
-		var sql = 'CREATE TABLE IF NOT EXISTS ' + this.table + ' ( ' + columns.join(',') + ')';
-
-		// execute the create
-		this.db.execute(sql);
-	};
-
-	this.dropTable = function(config) {
-		this.db.execute('DROP TABLE IF EXISTS ' + this.table);
-	};
-
-	this.insertRow = function(columnValues) {
-		var columns = [];
-		var values = [];
-		var qs = [];
-
-		// get arrays of column names, values, and value placeholders
-		var found = false;
-		for (var key in columnValues) {
-			key === this.idAttribute && ( found = true);
-			columns.push(key);
-			values.push(columnValues[key]);
-			qs.push('?');
-		}
-
-		// add the id field if it wasn't specified
-		if (!found && this.idAttribute === ALLOY_ID_DEFAULT) {
-			columns.push(this.idAttribute);
-			values.push(util.guid());
-			qs.push('?');
-		}
-
-		// construct and execute the query
-		this.db.execute('INSERT INTO ' + this.table + ' (' + columns.join(',') + ') VALUES (' + qs.join(',') + ');', values);
-	};
-
-	this.deleteRow = function(columns) {
-		var sql = 'DELETE FROM ' + this.table;
-		var keys = _.keys(columns);
-		var len = keys.length;
-		var conditions = [];
-		var values = [];
-
-		// construct the where clause, if necessary
-		len && (sql += ' WHERE ');
-		for (var i = 0; i < len; i++) {
-			conditions.push(keys[i] + ' = ?');
-			values.push(columns[keys[i]]);
-		}
-		sql += conditions.join(' AND ');
-
-		// execute the delete
-		this.db.execute(sql, values);
-	};
+    this.db = transactionDb;
+    this.dbname = config.adapter.db_name;
+    this.table = config.adapter.collection_name;
+    this.idAttribute = config.adapter.idAttribute;
+    this.column = function(name) {
+        var parts = name.split(/\s+/), type = parts[0];
+        switch (type.toLowerCase()) {
+          case "string":
+          case "varchar":
+          case "date":
+          case "datetime":
+            Ti.API.warn("\"" + type + "\" is not a valid sqlite field, using TEXT instead");
+          case "text":
+            type = "TEXT";
+            break;
+          case "int":
+          case "tinyint":
+          case "smallint":
+          case "bigint":
+          case "boolean":
+            Ti.API.warn("\"" + type + "\" is not a valid sqlite field, using INTEGER instead");
+          case "integer":
+            type = "INTEGER";
+            break;
+          case "double":
+          case "float":
+          case "decimal":
+          case "number":
+            Ti.API.warn("\"" + name + "\" is not a valid sqlite field, using REAL instead");
+          case "real":
+            type = "REAL";
+            break;
+          case "blob":
+            type = "BLOB";
+            break;
+          case "null":
+            type = "NULL";
+            break;
+          default:
+            type = "TEXT";
+        }
+        parts[0] = type;
+        return parts.join(" ");
+    };
+    this.createTable = function(config) {
+        var columns = [], found = !1;
+        for (var k in config.columns) {
+            k === this.idAttribute && (found = !0);
+            columns.push(k + " " + this.column(config.columns[k]));
+        }
+        !found && this.idAttribute === ALLOY_ID_DEFAULT && columns.push(ALLOY_ID_DEFAULT + " TEXT");
+        var sql = "CREATE TABLE IF NOT EXISTS " + this.table + " ( " + columns.join(",") + ")";
+        //Ti.API.error("MIGRATOR createTable " + sql);
+        this.db.execute(sql);
+    };
+    this.dropTable = function(config) {
+        this.db.execute("DROP TABLE IF EXISTS " + this.table);
+    };
+    this.insertRow = function(columnValues) {
+        var columns = [], values = [], qs = [], found = !1;
+        for (var key in columnValues) {
+            key === this.idAttribute && (found = !0);
+            columns.push(key);
+            values.push(columnValues[key]);
+            qs.push("?");
+        }
+        if (!found && this.idAttribute === ALLOY_ID_DEFAULT) {
+            columns.push(this.idAttribute);
+            values.push(util.guid());
+            qs.push("?");
+        }
+        this.db.execute("INSERT INTO " + this.table + " (" + columns.join(",") + ") VALUES (" + qs.join(",") + ");", values);
+    };
+    this.deleteRow = function(columns) {
+        var sql = "DELETE FROM " + this.table, keys = _.keys(columns), len = keys.length, conditions = [], values = [];
+        len && (sql += " WHERE ");
+        for (var i = 0; i < len; i++) {
+            conditions.push(keys[i] + " = ?");
+            values.push(columns[keys[i]]);
+        }
+        sql += conditions.join(" AND ");
+        this.db.execute(sql, values);
+    };
 }
 
 function apiCall(_options, _callback) {
@@ -166,6 +133,7 @@ function apiCall(_options, _callback) {
 		xhr.open(_options.type, _options.url);
 
 		xhr.onload = function() {
+		    //debugger;
 			_callback({
 				'success' : true,
 				'responseText' : xhr.responseText || null,
@@ -176,12 +144,14 @@ function apiCall(_options, _callback) {
 
 		//Handle error
 		xhr.onerror = function() {
+		    //debugger;
 			_callback({
 				'success' : false,
 				'responseText' : xhr.responseText
 			});
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 		}
+		
 		for (var header in _options.headers) {
 			xhr.setRequestHeader(header, _options.headers[header]);
 		}
@@ -194,7 +164,8 @@ function apiCall(_options, _callback) {
 		//we are offline
 		_callback({
 			'success' : false,
-			'responseText' : ""
+			'responseText' : "",
+			'offline' : true
 		});
 		Ti.API.debug('[SQL REST API] apiCall: Offline / Local Mode');
 	}
@@ -204,13 +175,14 @@ function Sync(method, model, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
 	model.idAttribute = model.config.adapter.idAttribute; //fix for collection
 	var DEBUG = model.config.debug;
+	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
 	
 	//REST API
 	var methodMap = {
-		'create' : 'POST',
-		'read' : 'GET',
-		'update' : 'PUT',
-		'delete' : 'DELETE'
+		'create' 	: 'POST',
+		'read' 		: 'GET',
+		'update' 	: 'PUT',
+		'delete' 	: 'DELETE'
 	};
 
 	var type = methodMap[method];
@@ -219,7 +191,12 @@ function Sync(method, model, opts) {
 
 	//set default headers
 	params.headers = params.headers || {};
-
+	
+	//send last modified model datestamp to the remote server
+	if(lastModifiedColumn && _.isUndefined(params.disableLastModified)){
+		params.headers['Last-Modified'] = sqlLastModifiedItem();
+	}
+	
 	// We need to ensure that we have a base url.
 	if (!params.url) {
 		params.url = (model.config.URL || model.url());
@@ -269,13 +246,22 @@ function Sync(method, model, opts) {
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = JSON.parse(_response.responseText);
+					if(DEBUG){ 
+						Ti.API.info("[SQL REST API] server response: ");
+						Ti.API.debug(data) 
+					}
 					//Rest API should return a new model id.
 					resp = createSQL(data);
 					_.isFunction(params.success) && params.success(resp);
 				} else {
 					//offline or error
 					resp = createSQL();
-					_.isFunction(params.error) && params.error(resp);
+					if(_.isUndefined(_response.offline)){
+						_.isFunction(params.error) && params.error(resp);	
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			});
 			break;
@@ -284,9 +270,11 @@ function Sync(method, model, opts) {
 				params.url = params.url + '/' + model.id;
 			}
 			
+			
 			if(params.urlparams){
-				params.url += "?"+encodeData(params.urlparams);
-			}
+                params.url = encodeData(params.urlparams, params.url);
+            }
+            
 			
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
@@ -295,6 +283,10 @@ function Sync(method, model, opts) {
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = JSON.parse(_response.responseText);
+					if(DEBUG){ 
+						Ti.API.info("[SQL REST API] server response: ");
+						Ti.API.debug(data) 
+					}
 					var currentModels = sqlCurrentModels();
 					for (var i in data) {
 						if(data[i]["is_deleted"]){ //delete item
@@ -311,7 +303,13 @@ function Sync(method, model, opts) {
 				} else {
 					//error or offline - read local data
 					resp = readSQL();
-					_.isFunction(params.error) && params.error(resp);
+					if(_.isUndefined(_response.offline)){
+						//error
+						_.isFunction(params.error) && params.error(resp);	
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			});
 
@@ -325,7 +323,17 @@ function Sync(method, model, opts) {
 			}
 
 			// setup the url & data
-			params.url = params.url + '/' + model.id;
+			if(_.indexOf(params.url, "?") == -1) {
+				params.url = params.url + '/' + model.id;
+			} else {
+				var str = params.url.split("?");
+				params.url = str[0] + '/' + model.id + "?" + str[1];
+			}
+			
+			if(params.urlparams){
+                params.url = encodeData(params.urlparams, params.url);
+            }
+			
 			params.data = JSON.stringify(model.toJSON());
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
@@ -334,6 +342,10 @@ function Sync(method, model, opts) {
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = JSON.parse(_response.responseText);
+					if(DEBUG){ 
+						Ti.API.info("[SQL REST API] server response: ");
+						Ti.API.debug(data) 
+					}
 					var currentModels = sqlCurrentModels();
 					if (_.indexOf(currentModels, Number(data[model.idAttribute])) != -1) {
 						resp = updateSQL(data); //item exists - update it
@@ -349,7 +361,13 @@ function Sync(method, model, opts) {
 					} else {
 						resp = createSQL(); //write remote data to local sql
 					}
-					_.isFunction(params.error) && params.error(resp);
+					if(_.isUndefined(_response.offline)){
+						//error
+						_.isFunction(params.error) && params.error(resp);	
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			});
 			break;
@@ -368,11 +386,21 @@ function Sync(method, model, opts) {
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = JSON.parse(_response.responseText);
+					if(DEBUG){ 
+						Ti.API.info("[SQL REST API] server response: ");
+						Ti.API.debug(data) 
+					}
 					resp = deleteSQL();
 					_.isFunction(params.success) && params.success(resp);
 				} else {
 					resp = deleteSQL();
-					_.isFunction(params.error) && params.error(resp);
+					if(_.isUndefined(_response.offline)){
+						//error
+						_.isFunction(params.error) && params.error(resp);	
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			});
 			break;
@@ -423,14 +451,9 @@ function Sync(method, model, opts) {
 			}
 			q.push('?');
 		}
-		
-		/*
-		CREATE TRIGGER add_date 
-	    AFTER INSERT ON Entries 
-	    BEGIN 
-	      UPDATE Entries SET updated = datetime('now') WHERE entryID = new. entryID; 
-	    END; 
-		*/
+		if(lastModifiedColumn){
+			values[_.indexOf(names, lastModifiedColumn)] = moment().format('YYYY-MM-DD HH:mm:ss'); //"DATETIME('NOW')";
+		}
 
 		// Assemble create query
 		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
@@ -471,7 +494,7 @@ function Sync(method, model, opts) {
 		if (opts.query) {
 			var rs = db.execute(opts.query.sql, opts.query.params);
 		} else {
-			var sql = _buildQuery(table, opts.data || opts);
+			var sql = _buildQuery(table, opts.sql || opts);
 			if(DEBUG){
 				Ti.API.debug("[SQL REST API] SQL QUERY: " + sql);
 			}
@@ -485,7 +508,6 @@ function Sync(method, model, opts) {
 			var o = {};
 			var fc = 0;
 
-			// TODO: https://jira.appcelerator.org/browse/ALOY-459
 			fc = _.isFunction(rs.fieldCount) ? rs.fieldCount() : rs.fieldCount;
 
 			// create list of rows returned from query
@@ -494,11 +516,11 @@ function Sync(method, model, opts) {
 				o[fn] = rs.fieldByName(fn);
 			});
 			values.push(o);
-			
-			//push the models
-			var m = new model.config.Model(o);
-			model.models.push(m);
-			
+			if(model.models){
+				//push the models
+				var m = new model.config.Model(o);
+				model.models.push(m);
+			}
 			len++;
 			rs.next();
 		}
@@ -549,6 +571,12 @@ function Sync(method, model, opts) {
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
+		
+		if(lastModifiedColumn){
+			var updateSQL = "UPDATE " + table + " SET " + lastModifiedColumn + " = DATETIME('NOW') WHERE " + model.idAttribute +"=?";
+			db.execute(updateSQL, attrObj[model.idAttribute]);
+		}
+		
 		db.close();
 		
 		return attrObj;
@@ -592,6 +620,19 @@ function Sync(method, model, opts) {
 		db.close();
 		return output;
 	}
+	
+	function sqlLastModifiedItem(){
+		var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
+		db = Ti.Database.open(dbName);
+		rs = db.execute(sql);
+		var output = null;
+		if(rs.isValidRow()) {
+			output=rs.field(0);
+		}
+		rs.close();
+		db.close();
+		return output;
+	}
 
 }
 
@@ -600,11 +641,17 @@ function Sync(method, model, opts) {
 // SQL HELPERS
 /////////////////////////////////////////////
 
-var encodeData = function(obj) {
+var encodeData = function(obj, url) {
 	var str = [];
-	for(var p in obj)
+	for(var p in obj){
 		str.push(Ti.Network.encodeURIComponent(p) + "=" + Ti.Network.encodeURIComponent(obj[p]));
-	return str.join("&"); 
+	}
+		
+	if(_.indexOf(url, "?") == -1) {
+		return url + "?" + str.join("&");
+	} else {
+		return url + "&" + str.join("&");
+	}
 }
 	
 
@@ -704,7 +751,6 @@ function _buildQuery(table, opts) {
 }
 
 
-
 /////////////////////////////////////////////
 // MIGRATION
 /////////////////////////////////////////////
@@ -761,12 +807,15 @@ function Migrate(Model) {
 	// match and there is no need to run the migrations.
 	var direction;
 	if (currentNumber === targetNumber) {
+		//Ti.API.error("Migrate :: No migration necessary");
 		return;
 	} else if (currentNumber && currentNumber > targetNumber) {
 		direction = 0;
 		// rollback
+		//Ti.API.error("Migrate :: rollback");
 		migrations.reverse();
 	} else {
+		//Ti.API.error("Migrate :: upgrade");
 		direction = 1;
 		// upgrade
 	}
@@ -784,7 +833,7 @@ function Migrate(Model) {
 			var migration = migrations[i];
 			var context = {};
 			migration(context);
-
+			//Ti.API.error("Migrate :: migrating...");
 			// if upgrading, skip migrations higher than the target
 			// if rolling back, skip migrations lower than the target
 			if (direction) {
@@ -821,6 +870,7 @@ function Migrate(Model) {
 	db.execute('COMMIT;');
 	db.close();
 	migrator.db = null;
+	Ti.API.error("Migrate :: finished");
 }
 
 function installDatabase(config) {
@@ -911,9 +961,7 @@ module.exports.afterModelCreate = function(Model, name) {
 	Model.prototype.config.Model = Model; // needed for fetch operations to initialize the collection from persistent store
 	Model.prototype.idAttribute = Model.prototype.config.adapter.idAttribute;
 	Migrate(Model);
-
-	// Add the Model class to the cache
-	cache.Model[name] = Model;
+	cache.Model[name] = Model; // Add the Model class to the cache
 
 	return Model;
 };
