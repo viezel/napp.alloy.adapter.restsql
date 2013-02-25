@@ -91,6 +91,9 @@ Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except,
 
 ## Changelog
 
+**v0.1.15**
+Added check for model in read.
+
 **v0.1.14**
 Added `Last Modified` for data transfer optimisation & debug mode
 

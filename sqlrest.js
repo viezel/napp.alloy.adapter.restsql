@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.14
+ * @version 0.1.15
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -287,16 +287,27 @@ function Sync(method, model, opts) {
 						Ti.API.info("[SQL REST API] server response: ");
 						Ti.API.debug(data) 
 					}
-					var currentModels = sqlCurrentModels();
-					for (var i in data) {
-						if(data[i]["is_deleted"]){ //delete item
-							deleteSQL(data[i][model.idAttribute]);
-						} else if (_.indexOf(currentModels, Number(data[i][model.idAttribute])) != -1) {
-							updateSQL(data[i]); //item exists - update it
+					if(_.isObject(data)){ //its a model						
+						if(data["is_deleted"]){ //delete item
+							deleteSQL(dat[model.idAttribute]);
+						} else if(sqlFindItem(data[model.idAttribute]).length == 1){
+							updateSQL(data); //item exists - update it
 						} else {
-							createSQL(data[i]); //write remote data to local sql
+							createSQL(data); //write remote data to local sql
+						}				
+					} else { //its an array of models
+						var currentModels = sqlCurrentModels();
+						for (var i in data) {
+							if(data[i]["is_deleted"]){ //delete item
+								deleteSQL(data[i][model.idAttribute]);
+							} else if (_.indexOf(currentModels, Number(data[i][model.idAttribute])) != -1) {
+								updateSQL(data[i]); //item exists - update it
+							} else {
+								createSQL(data[i]); //write remote data to local sql
+							}
 						}
 					}
+					
 					resp = readSQL();
 					_.isFunction(params.success) && params.success(resp);
 					model.trigger("fetch");
@@ -622,7 +633,7 @@ function Sync(method, model, opts) {
 	}
 	
 	function sqlLastModifiedItem(){
-		var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
+		var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
 		db = Ti.Database.open(dbName);
 		rs = db.execute(sql);
 		var output = null;
