@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.15
+ * @version 0.1.16
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -87,7 +87,6 @@ function Migrator(config, transactionDb) {
         }
         !found && this.idAttribute === ALLOY_ID_DEFAULT && columns.push(ALLOY_ID_DEFAULT + " TEXT");
         var sql = "CREATE TABLE IF NOT EXISTS " + this.table + " ( " + columns.join(",") + ")";
-        //Ti.API.error("MIGRATOR createTable " + sql);
         this.db.execute(sql);
     };
     this.dropTable = function(config) {
@@ -126,25 +125,22 @@ function apiCall(_options, _callback) {
 		//we are online - talk with Rest API
 
 		var xhr = Ti.Network.createHTTPClient({
-			timeout : _options.timeout || 5000
+			timeout : _options.timeout || 7000
 		});
 		
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
 
 		xhr.onload = function() {
-		    //debugger;
 			_callback({
 				'success' : true,
 				'responseText' : xhr.responseText || null,
 				'responseData' : xhr.responseData || null
 			});
-			
 		};
 
 		//Handle error
 		xhr.onerror = function() {
-		    //debugger;
 			_callback({
 				'success' : false,
 				'responseText' : xhr.responseText
@@ -164,10 +160,10 @@ function apiCall(_options, _callback) {
 		//we are offline
 		_callback({
 			'success' : false,
-			'responseText' : "",
+			'responseText' : null,
 			'offline' : true
 		});
-		Ti.API.debug('[SQL REST API] apiCall: Offline / Local Mode');
+		//Ti.API.debug('[SQL REST API] apiCall: Offline / Local Mode');
 	}
 }
 
@@ -176,6 +172,20 @@ function Sync(method, model, opts) {
 	model.idAttribute = model.config.adapter.idAttribute; //fix for collection
 	var DEBUG = model.config.debug;
 	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
+	
+	var isCollection = (model instanceof Backbone.Collection) ? true : false;
+	
+	//@TODO: REWRITE START
+	var singleModelRequest = null;
+	if(lastModifiedColumn){
+		if(opts.sql && opts.sql.where ){
+			singleModelRequest = opts.sql.where[model.idAttribute];
+		} 
+		if(!singleModelRequest && opts.data && opts.data[model.idAttribute]){
+			singleModelRequest = opts.data[model.idAttribute];
+		}
+	}
+	// REWRITE END
 	
 	//REST API
 	var methodMap = {
@@ -307,7 +317,6 @@ function Sync(method, model, opts) {
 							}
 						}
 					}
-					
 					resp = readSQL();
 					_.isFunction(params.success) && params.success(resp);
 					model.trigger("fetch");
@@ -320,6 +329,7 @@ function Sync(method, model, opts) {
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
+						model.trigger("fetch");
 					}
 				}
 			});
@@ -431,7 +441,7 @@ function Sync(method, model, opts) {
 		if(data){
 			attrObj = data;
 		} else {
-			if(_.isUndefined(model.models)){
+			if(!isCollection){
 				attrObj = model.toJSON();
 			} else {
 				Ti.API.error("[SQL REST API] Its a collection - error !");
@@ -462,7 +472,7 @@ function Sync(method, model, opts) {
 			}
 			q.push('?');
 		}
-		if(lastModifiedColumn){
+		if(lastModifiedColumn && _.isUndefined(params.disableLastModified)){
 			values[_.indexOf(names, lastModifiedColumn)] = moment().format('YYYY-MM-DD HH:mm:ss'); //"DATETIME('NOW')";
 		}
 
@@ -505,6 +515,11 @@ function Sync(method, model, opts) {
 		if (opts.query) {
 			var rs = db.execute(opts.query.sql, opts.query.params);
 		} else {
+			if(opts.data){ //extend sql where with data
+				opts.sql = opts.sql || {};
+				opts.sql.where = opts.sql.where || {};
+				_.extend(opts.sql.where, opts.data );
+			}
 			var sql = _buildQuery(table, opts.sql || opts);
 			if(DEBUG){
 				Ti.API.debug("[SQL REST API] SQL QUERY: " + sql);
@@ -527,7 +542,7 @@ function Sync(method, model, opts) {
 				o[fn] = rs.fieldByName(fn);
 			});
 			values.push(o);
-			if(model.models){
+			if(isCollection){
 				//push the models
 				var m = new model.config.Model(o);
 				model.models.push(m);
@@ -556,7 +571,7 @@ function Sync(method, model, opts) {
 		if(data){
 			attrObj = data;
 		} else {
-			if(_.isUndefined(model.models)){
+			if(!isCollection){
 				attrObj = model.toJSON();
 			} else {
 				Ti.API.error("Its a collection - error!");
@@ -566,24 +581,29 @@ function Sync(method, model, opts) {
 		// Create arrays for insert query
 		var names = [], values = [], q = [];
 		for (var k in columns) {
-			names.push(k+'=?');
-			if( _.isObject(attrObj[k]) ) {
-				values.push(JSON.stringify(attrObj[k]));
-			} else {
-				values.push(attrObj[k]);	
+			if(!_.isUndefined(attrObj[k])){ //only update those who are in the data
+				names.push(k+'=?');
+				if( _.isObject(attrObj[k]) ) {
+					values.push(JSON.stringify(attrObj[k]));
+				} else {
+					values.push(attrObj[k]);	
+				}
+				q.push('?');
 			}
-			q.push('?');
 		}
 
 		// compose the update query
 		var sql = 'UPDATE ' + table + ' SET ' + names.join(',') + ' WHERE ' + model.idAttribute + '=?';
 		values.push(attrObj[model.idAttribute]);
-		
+		if(DEBUG){ 
+			Ti.API.debug("updateSQL sql: " + sql); 
+			Ti.API.debug(values); 
+		}
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
 		
-		if(lastModifiedColumn){
+		if(lastModifiedColumn && _.isUndefined(params.disableLastModified)){
 			var updateSQL = "UPDATE " + table + " SET " + lastModifiedColumn + " = DATETIME('NOW') WHERE " + model.idAttribute +"=?";
 			db.execute(updateSQL, attrObj[model.idAttribute]);
 		}
@@ -633,7 +653,14 @@ function Sync(method, model, opts) {
 	}
 	
 	function sqlLastModifiedItem(){
-		var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
+		if(singleModelRequest || !isCollection){
+			//model
+			var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL AND ' + model.idAttribute + '='+ singleModelRequest +' ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
+		} else {
+			//collection
+			var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
+		}
+		
 		db = Ti.Database.open(dbName);
 		rs = db.execute(sql);
 		var output = null;
@@ -762,6 +789,54 @@ function _buildQuery(table, opts) {
 }
 
 
+/*
+function executeSql (sql, data) {
+	if(data != undefined && data.length > 0) {
+		var final_sql = sql;
+		for(var value in data) {
+			final_sql = final_sql.replace(sqlSeperator, '"' + escapeSql(data[value]) + '"');
+		}
+		return db_instance.execute(final_sql);
+	} else {
+		return db_instance.execute(sql);
+	}
+}
+
+function updateTableSchema (schema) {
+	Ti.API.debug("db.js: update to schema is needed at table: " + table);
+	var row = executeSql("SELECT * FROM '" + table + "' LIMIT 0,1;");
+	var columns = "";
+	
+	// parity issue: https://jira.appcelerator.org/browse/TIMOB-2945
+	fc = _.isFunction(rs.fieldCount) ? rs.fieldCount() : rs.fieldCount;
+	if(fc > 1) {
+		columns = getCommonColumns(schema,row,fc).join();
+	}
+	row.close();
+	
+	db_instance.execute('CREATE TEMPORARY TABLE ' + table + '_backup(' + columns + ');')
+	db_instance.execute('INSERT INTO ' + table + '_backup SELECT ' + columns + ' FROM ' + table + ';');
+	db_instance.execute('DROP TABLE ' + table + ';');
+	db_instance.execute(createTableSql(schema));
+	db_instance.execute('INSERT INTO ' + table + ' (' + columns + ') SELECT ' + columns + ' FROM ' + table + '_backup;');
+	db_instance.execute('DROP TABLE ' + table + '_backup;');
+}
+function createTableSql(schema) {
+	if(schema[0] == "id") {
+		db_schema = schema.slice(1, schema.length);
+	} else {
+		db_schema = schema;
+	}
+	var sql = 'CREATE TABLE IF NOT EXISTS ' + table + ' (';
+	sql += "\n\tid INTEGER PRIMARY KEY";
+	for(var field in db_schema) {
+		sql += ",\n\t" + db_schema[field] + ' TEXT';
+	}
+	sql += "\n);";
+	return sql;
+}
+*/
+
 /////////////////////////////////////////////
 // MIGRATION
 /////////////////////////////////////////////
@@ -818,17 +893,14 @@ function Migrate(Model) {
 	// match and there is no need to run the migrations.
 	var direction;
 	if (currentNumber === targetNumber) {
-		//Ti.API.error("Migrate :: No migration necessary");
 		return;
 	} else if (currentNumber && currentNumber > targetNumber) {
 		direction = 0;
 		// rollback
-		//Ti.API.error("Migrate :: rollback");
 		migrations.reverse();
 	} else {
-		//Ti.API.error("Migrate :: upgrade");
-		direction = 1;
 		// upgrade
+		direction = 1;
 	}
 
 	// open db for our migration transaction
@@ -844,7 +916,6 @@ function Migrate(Model) {
 			var migration = migrations[i];
 			var context = {};
 			migration(context);
-			//Ti.API.error("Migrate :: migrating...");
 			// if upgrading, skip migrations higher than the target
 			// if rolling back, skip migrations lower than the target
 			if (direction) {
@@ -881,7 +952,6 @@ function Migrate(Model) {
 	db.execute('COMMIT;');
 	db.close();
 	migrator.db = null;
-	Ti.API.error("Migrate :: finished");
 }
 
 function installDatabase(config) {

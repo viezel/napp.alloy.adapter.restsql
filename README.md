@@ -74,6 +74,9 @@ You can perform a local query, and use a bunch of SQL commands without having to
 Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except, like, likeor*
 
 	collection.fetch({
+		data: {
+			language: "English"
+		},
 		sql: {
 			where:{
 				category_id: 2
@@ -90,6 +93,11 @@ Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except,
 
 
 ## Changelog
+
+**v0.1.16**
+Added combined data and sql.where queries. 
+isCollection check. 
+Bugfixes for `Last Modified`. 
 
 **v0.1.15**
 Added check for model in read.
