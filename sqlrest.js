@@ -297,7 +297,7 @@ function Sync(method, model, opts) {
 						Ti.API.info("[SQL REST API] server response: ");
 						Ti.API.debug(data) 
 					}
-					if(_.isObject(data)){ //its a model						
+					if(!_.isArray(data)){ //its a model				
 						if(data["is_deleted"]){ //delete item
 							deleteSQL(dat[model.idAttribute]);
 						} else if(sqlFindItem(data[model.idAttribute]).length == 1){
