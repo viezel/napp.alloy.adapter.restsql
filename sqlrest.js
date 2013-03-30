@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.16
+ * @version 0.1.17
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -297,23 +297,25 @@ function Sync(method, model, opts) {
 						Ti.API.info("[SQL REST API] server response: ");
 						Ti.API.debug(data) 
 					}
-					if(!_.isArray(data)){ //its a model				
-						if(data["is_deleted"]){ //delete item
-							deleteSQL(dat[model.idAttribute]);
-						} else if(sqlFindItem(data[model.idAttribute]).length == 1){
-							updateSQL(data); //item exists - update it
-						} else {
-							createSQL(data); //write remote data to local sql
-						}				
-					} else { //its an array of models
-						var currentModels = sqlCurrentModels();
-						for (var i in data) {
-							if(data[i]["is_deleted"]){ //delete item
-								deleteSQL(data[i][model.idAttribute]);
-							} else if (_.indexOf(currentModels, Number(data[i][model.idAttribute])) != -1) {
-								updateSQL(data[i]); //item exists - update it
+					if(_.isUndefined(params.localOnly)){ //we dont want to manipulate the data on localOnly requests
+						if(!_.isArray(data)){ //its a model				
+							if(data["is_deleted"]){ //delete item
+								deleteSQL(dat[model.idAttribute]);
+							} else if(sqlFindItem(data[model.idAttribute]).length == 1){
+								updateSQL(data); //item exists - update it
 							} else {
-								createSQL(data[i]); //write remote data to local sql
+								createSQL(data); //write remote data to local sql
+							}				
+						} else { //its an array of models
+							var currentModels = sqlCurrentModels();
+							for (var i in data) {
+								if(data[i]["is_deleted"]){ //delete item
+									deleteSQL(data[i][model.idAttribute]);
+								} else if (_.indexOf(currentModels, Number(data[i][model.idAttribute])) != -1) {
+									updateSQL(data[i]); //item exists - update it
+								} else {
+									createSQL(data[i]); //write remote data to local sql
+								}
 							}
 						}
 					}
@@ -704,7 +706,7 @@ function _valueType(value) {
 }
 
 function _buildQuery(table, opts) {
-	var sql = 'SELECT * ';
+	var sql = 'SELECT *';
 	if (opts.select) {
 		sql = 'SELECT ';
 		if ( typeof opts.select == 'array') {
@@ -714,14 +716,23 @@ function _buildQuery(table, opts) {
 		}
 	}
 
-	sql += 'FROM ' + table;
+	sql += ' FROM ' + table;
 
 	if (opts.where) {
 		var where;
 		if ( typeof opts.where === 'object') {
 			where = [];
 			_.each(opts.where, function(v, f) {
-				where.push(f + " = " + _valueType(v));
+				if(_.isArray(v)) { //select multiple items
+					var innerWhere = [];
+					_.each(v, function(value) {
+						innerWhere.push(f + " = " + _valueType(value));	
+					});
+					where.push(innerWhere.join(' OR '));
+				} else {
+					where.push(f + " = " + _valueType(v));
+				}
+				
 			});
 			where = where.join(' AND ');
 		} else if ( typeof opts.where === 'array') {

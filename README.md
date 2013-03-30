@@ -94,6 +94,11 @@ Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except,
 
 ## Changelog
 
+**v0.1.17**
+Added where statement that iterate an array. 
+Bugfix for select statements. 
+Optimised the localOnly request to only return data. 
+
 **v0.1.16**
 Added combined data and sql.where queries. 
 isCollection check. 
