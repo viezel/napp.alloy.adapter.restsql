@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.17
+ * @version 0.1.18
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -146,6 +146,7 @@ function apiCall(_options, _callback) {
 				'responseText' : xhr.responseText
 			});
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
+			Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
 		}
 		
 		for (var header in _options.headers) {
@@ -299,7 +300,7 @@ function Sync(method, model, opts) {
 					}
 					if(_.isUndefined(params.localOnly)){ //we dont want to manipulate the data on localOnly requests
 						if(!_.isArray(data)){ //its a model				
-							if(data["is_deleted"]){ //delete item
+							if(!_.isUndefined(data["is_deleted"])){ //delete item
 								deleteSQL(dat[model.idAttribute]);
 							} else if(sqlFindItem(data[model.idAttribute]).length == 1){
 								updateSQL(data); //item exists - update it
@@ -309,7 +310,7 @@ function Sync(method, model, opts) {
 						} else { //its an array of models
 							var currentModels = sqlCurrentModels();
 							for (var i in data) {
-								if(data[i]["is_deleted"]){ //delete item
+								if(!_.isUndefined(data["is_deleted"])){ //delete item
 									deleteSQL(data[i][model.idAttribute]);
 								} else if (_.indexOf(currentModels, Number(data[i][model.idAttribute])) != -1) {
 									updateSQL(data[i]); //item exists - update it
@@ -722,18 +723,7 @@ function _buildQuery(table, opts) {
 		var where;
 		if ( typeof opts.where === 'object') {
 			where = [];
-			_.each(opts.where, function(v, f) {
-				if(_.isArray(v)) { //select multiple items
-					var innerWhere = [];
-					_.each(v, function(value) {
-						innerWhere.push(f + " = " + _valueType(value));	
-					});
-					where.push(innerWhere.join(' OR '));
-				} else {
-					where.push(f + " = " + _valueType(v));
-				}
-				
-			});
+			where = whereBuilder(where, opts.where);
 			where = where.join(' AND ');
 		} else if ( typeof opts.where === 'array') {
 			where = opts.where.join(' AND ');
@@ -799,54 +789,22 @@ function _buildQuery(table, opts) {
 	return sql;
 }
 
-
-/*
-function executeSql (sql, data) {
-	if(data != undefined && data.length > 0) {
-		var final_sql = sql;
-		for(var value in data) {
-			final_sql = final_sql.replace(sqlSeperator, '"' + escapeSql(data[value]) + '"');
+function whereBuilder(where, data){
+	_.each(data, function(v, f) {
+		if(_.isArray(v) ) { //select multiple items
+			var innerWhere = [];
+			_.each(v, function(value) {
+				innerWhere.push(f + " = " + _valueType(value));	
+			});
+			where.push(innerWhere.join(' OR '));
+		} else if(_.isObject(v)){
+			where = whereBuilder(where, v);
+		} else {
+			where.push(f + " = " + _valueType(v));
 		}
-		return db_instance.execute(final_sql);
-	} else {
-		return db_instance.execute(sql);
-	}
+	});
+	return where;
 }
-
-function updateTableSchema (schema) {
-	Ti.API.debug("db.js: update to schema is needed at table: " + table);
-	var row = executeSql("SELECT * FROM '" + table + "' LIMIT 0,1;");
-	var columns = "";
-	
-	// parity issue: https://jira.appcelerator.org/browse/TIMOB-2945
-	fc = _.isFunction(rs.fieldCount) ? rs.fieldCount() : rs.fieldCount;
-	if(fc > 1) {
-		columns = getCommonColumns(schema,row,fc).join();
-	}
-	row.close();
-	
-	db_instance.execute('CREATE TEMPORARY TABLE ' + table + '_backup(' + columns + ');')
-	db_instance.execute('INSERT INTO ' + table + '_backup SELECT ' + columns + ' FROM ' + table + ';');
-	db_instance.execute('DROP TABLE ' + table + ';');
-	db_instance.execute(createTableSql(schema));
-	db_instance.execute('INSERT INTO ' + table + ' (' + columns + ') SELECT ' + columns + ' FROM ' + table + '_backup;');
-	db_instance.execute('DROP TABLE ' + table + '_backup;');
-}
-function createTableSql(schema) {
-	if(schema[0] == "id") {
-		db_schema = schema.slice(1, schema.length);
-	} else {
-		db_schema = schema;
-	}
-	var sql = 'CREATE TABLE IF NOT EXISTS ' + table + ' (';
-	sql += "\n\tid INTEGER PRIMARY KEY";
-	for(var field in db_schema) {
-		sql += ",\n\t" + db_schema[field] + ' TEXT';
-	}
-	sql += "\n);";
-	return sql;
-}
-*/
 
 /////////////////////////////////////////////
 // MIGRATION

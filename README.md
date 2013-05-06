@@ -94,6 +94,9 @@ Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except,
 
 ## Changelog
 
+**v0.1.18**
+Bugfix for select statements.
+
 **v0.1.17**
 Added where statement that iterate an array. 
 Bugfix for select statements. 
