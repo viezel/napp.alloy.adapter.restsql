@@ -19,7 +19,7 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 				"modified":text
 			},
 			"URL": "http://urlPathToRestAPIServer.com/api/modelname",
-			//"debug": 1, 
+			"debug": 1, //debug mode enabled
 			"adapter" : {
 				"type" : "sqlrest",
 				"collection_name" : "modelname",
@@ -27,7 +27,13 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 				
 				//optimise the amount of data transfer from remote server to app
 				"lastModifiedColumn": "modified"
-			}
+			},
+			
+			//optional
+			"headers": { //your custom headers
+	            "Accept": "application/vnd.stackmob+json; version=0",
+		        "X-StackMob-API-Key": "your-stackmob-key"
+	        },
 		},
 		extendModel : function(Model) {
 			_.extend(Model.prototype, {});
@@ -62,67 +68,72 @@ This is tell the adapter which column to store a timestamp every time a model ha
 
 If you want to load/save data from the local SQL database, then add the `localOnly` property.
 
-
-	collection.fetch({
-		localOnly:true
-	});
-
+```javascript
+collection.fetch({
+	localOnly:true
+});
+```
 
 ### Extended SQL interface
 
 You can perform a local query, and use a bunch of SQL commands without having to write the actual query. The query is also support btw.
 Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except, like, likeor*
 
-	collection.fetch({
-		data: {
-			language: "English"
+```javascript
+collection.fetch({  
+	data: {  
+		language: "English"
+	},  
+	sql: {  
+		where:{  
+			category_id: 2
 		},
-		sql: {
-			where:{
-				category_id: 2
-			},
-			orderBy:"title",
-			offset:20,
-			limit:20,
-			like: {
-				description: "search query"
-			}
-		},
-		localOnly:true
-	});
-
+		orderBy:"title",
+		offset:20,
+		limit:20,
+		like: {
+			description: "search query"
+		}
+	},
+	localOnly:true
+});
+```
 
 ## Changelog
 
-**v0.1.18**
+**v0.1.19**  
+Support for custom headers.  
+Fix for last modified column not existing on a new model.
+
+**v0.1.18**  
 Bugfix for select statements.
 
-**v0.1.17**
+**v0.1.17**  
 Added where statement that iterate an array. 
 Bugfix for select statements. 
 Optimised the localOnly request to only return data. 
 
-**v0.1.16**
+**v0.1.16**  
 Added combined data and sql.where queries. 
 isCollection check. 
 Bugfixes for `Last Modified`. 
 
-**v0.1.15**
+**v0.1.15**  
 Added check for model in read.
 
-**v0.1.14**
+**v0.1.14**  
 Added `Last Modified` for data transfer optimisation & debug mode
 
-**v0.1.13**
+**v0.1.13**  
 Updated for Alloy 1.0.0.GA
 
-**v0.1.12**
+**v0.1.12**  
 Added `urlparams` and improved `update` rest method
 
-**v0.1.11**
+**v0.1.11**  
 Advanced sql interface and localOnly added. 
 
-**v0.1.10**
+**v0.1.10**  
 Init 
 
 
