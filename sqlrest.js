@@ -210,18 +210,17 @@ function Sync(method, model, opts) {
 		}
 	}
 
-	//send last modified model datestamp to the remote server
-	var lastModifiedValue = "";
-	try {
-		lastModifiedValue = sqlLastModifiedItem();		
-	}
-	catch(e) {
-		if(DEBUG){ 
-			Ti.API.debug("[SQL REST API] LASTMOD SQL FAILED: ");
-			} 
-	}
-
 	if(lastModifiedColumn && _.isUndefined(params.disableLastModified)){
+		//send last modified model datestamp to the remote server
+		var lastModifiedValue = "";
+		try {
+			lastModifiedValue = sqlLastModifiedItem();		
+		}
+		catch(e) {
+			if(DEBUG){ 
+				Ti.API.debug("[SQL REST API] LASTMOD SQL FAILED: ");
+			} 
+		}
 		params.headers['Last-Modified'] = lastModifiedValue;
 	}
 	
