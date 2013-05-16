@@ -203,6 +203,13 @@ function Sync(method, model, opts) {
 	//set default headers
 	params.headers = params.headers || {};
 	
+	// Send our own custom headers
+	if(model.config.hasOwnProperty("headers")) {
+		for(header in model.config.headers) {
+			params.headers[header] = model.config.headers[header];
+		}
+	}
+
 	//send last modified model datestamp to the remote server
 	var lastModifiedValue = "";
 	try {
