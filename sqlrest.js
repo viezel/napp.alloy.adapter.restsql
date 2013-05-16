@@ -203,9 +203,25 @@ function Sync(method, model, opts) {
 	//set default headers
 	params.headers = params.headers || {};
 	
-	//send last modified model datestamp to the remote server
+	// Send our own custom headers
+	if(model.config.hasOwnProperty("headers")) {
+		for(header in model.config.headers) {
+			params.headers[header] = model.config.headers[header];
+		}
+	}
+
 	if(lastModifiedColumn && _.isUndefined(params.disableLastModified)){
-		params.headers['Last-Modified'] = sqlLastModifiedItem();
+		//send last modified model datestamp to the remote server
+		var lastModifiedValue = "";
+		try {
+			lastModifiedValue = sqlLastModifiedItem();		
+		}
+		catch(e) {
+			if(DEBUG){ 
+				Ti.API.debug("[SQL REST API] LASTMOD SQL FAILED: ");
+			} 
+		}
+		params.headers['Last-Modified'] = lastModifiedValue;
 	}
 	
 	// We need to ensure that we have a base url.
