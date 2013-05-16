@@ -68,6 +68,15 @@ If you want to load/save data from the local SQL database, then add the `localOn
 	});
 
 
+### Custom Headers
+
+Define your own custom headers. E.g. to add a BaaS API key
+
+        "headers": {
+		"Accept": "application/vnd.stackmob+json; version=0",
+		"X-StackMob-API-Key": "your-stackmob-key"
+		},
+
 ### Extended SQL interface
 
 You can perform a local query, and use a bunch of SQL commands without having to write the actual query. The query is also support btw.
@@ -93,6 +102,10 @@ Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except,
 
 
 ## Changelog
+
+**v0.1.19**
+Fix SQL error if model not created yet and last modified feature used
+Add custom headers
 
 **v0.1.18**
 Bugfix for select statements.
@@ -132,6 +145,12 @@ Init
 web: http://www.napp.dk  
 email: mm@napp.dk  
 twitter: @nappdev  
+
+## Contributors
+**Neville Dastur**  
+web: http://www.clinsoftsolutions.com  
+email: info@clinsoftsolutions.com  
+twitter: [@ClinSoftSol](http://twitter.com/clinsoftsol)  
 
 ## License
 
