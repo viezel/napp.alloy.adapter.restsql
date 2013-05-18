@@ -50,7 +50,7 @@ Then add the `sqlrest.js` to `PROJECT_FOLDER/assets/alloy/sync/`. Create the fol
 Use the `debug` property in the above example to get logs printed with sql statements and server respose to debug your usage of the sqlrest adapter.
 
 
-## Special properties
+## Special Properties
 
 ### Last Modified
 
@@ -62,6 +62,32 @@ Save a timestamp for each model in the database. Use the `lastModifiedColumn` pr
 	},
 
 This is tell the adapter which column to store a timestamp every time a model has been changed. 
+
+### Custom Headers
+
+Define your own custom headers. E.g. to add a BaaS API
+
+	"headers": {
+		"Accept": "application/vnd.stackmob+json; version=0",
+		"X-StackMob-API-Key": "your-stackmob-key"
+	}
+
+### Nested Result Objects
+
+Lets say you are a REST API where the results are nested. Like the Twitter search API. It has the found feeds in a results object. 
+Use the `parentNode` to specify which child object you want to parse. 
+
+	config: {
+		...
+		parentNode:"results"
+	}
+	
+It has support for nested objects. 
+	
+	config: {
+		...
+		parentNode:"news.domestic"
+	}
 
 
 ### localOnly
@@ -100,6 +126,9 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.20**  
+Support for parsing nested result objects.
 
 **v0.1.19**  
 Support for custom headers.  

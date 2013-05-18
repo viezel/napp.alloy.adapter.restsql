@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.19
+ * @version 0.1.20
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -9,8 +9,7 @@
 var _ = require('alloy/underscore')._, util = require('alloy/sync/util');
 
 //until this issue is fixed: https://jira.appcelerator.org/browse/TIMOB-11752
-var Alloy = require("alloy"), Backbone = Alloy.Backbone;
-var moment = require('alloy/moment');
+var Alloy = require("alloy"), Backbone = Alloy.Backbone, moment = require('alloy/moment');
 
 // The database name used when none is specified in the
 // model configuration.
@@ -173,10 +172,9 @@ function Sync(method, model, opts) {
 	model.idAttribute = model.config.adapter.idAttribute; //fix for collection
 	var DEBUG = model.config.debug;
 	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
-	
+	var parentNode = model.config.parentNode;
 	var isCollection = (model instanceof Backbone.Collection) ? true : false;
 	
-	//@TODO: REWRITE START
 	var singleModelRequest = null;
 	if(lastModifiedColumn){
 		if(opts.sql && opts.sql.where ){
@@ -186,7 +184,6 @@ function Sync(method, model, opts) {
 			singleModelRequest = opts.data[model.idAttribute];
 		}
 	}
-	// REWRITE END
 	
 	//REST API
 	var methodMap = {
@@ -272,11 +269,7 @@ function Sync(method, model, opts) {
 			}
 			apiCall(params, function(_response) {
 				if (_response.success) {
-					var data = JSON.parse(_response.responseText);
-					if(DEBUG){ 
-						Ti.API.info("[SQL REST API] server response: ");
-						Ti.API.debug(data) 
-					}
+					var data = parseJSON(_response, parentNode);
 					//Rest API should return a new model id.
 					resp = createSQL(data);
 					_.isFunction(params.success) && params.success(resp);
@@ -309,11 +302,7 @@ function Sync(method, model, opts) {
 			}
 			apiCall(params, function(_response) {
 				if (_response.success) {
-					var data = JSON.parse(_response.responseText);
-					if(DEBUG){ 
-						Ti.API.info("[SQL REST API] server response: ");
-						Ti.API.debug(data) 
-					}
+					var data = parseJSON(_response, parentNode);
 					if(_.isUndefined(params.localOnly)){ //we dont want to manipulate the data on localOnly requests
 						if(!_.isArray(data)){ //its a model				
 							if(!_.isUndefined(data["is_deleted"])){ //delete item
@@ -381,11 +370,7 @@ function Sync(method, model, opts) {
 			}
 			apiCall(params, function(_response) {
 				if (_response.success) {
-					var data = JSON.parse(_response.responseText);
-					if(DEBUG){ 
-						Ti.API.info("[SQL REST API] server response: ");
-						Ti.API.debug(data) 
-					}
+					var data = parseJSON(_response, parentNode);
 					var currentModels = sqlCurrentModels();
 					if (_.indexOf(currentModels, Number(data[model.idAttribute])) != -1) {
 						resp = updateSQL(data); //item exists - update it
@@ -425,11 +410,7 @@ function Sync(method, model, opts) {
 			}
 			apiCall(params, function(_response) {
 				if (_response.success) {
-					var data = JSON.parse(_response.responseText);
-					if(DEBUG){ 
-						Ti.API.info("[SQL REST API] server response: ");
-						Ti.API.debug(data) 
-					}
+					var data = parseJSON(_response, parentNode);
 					resp = deleteSQL();
 					_.isFunction(params.success) && params.success(resp);
 				} else {
@@ -690,6 +671,19 @@ function Sync(method, model, opts) {
 		db.close();
 		return output;
 	}
+	
+	
+	function parseJSON(_response, parentNode){
+		var data = JSON.parse(_response.responseText);
+		if(!_.isUndefined(parentNode)){
+			data = traverseProperties(data, parentNode);
+		}
+		if(DEBUG){ 
+			Ti.API.info("[SQL REST API] server response: ");
+			Ti.API.debug(data) 
+		}
+		return data;
+	}
 
 }
 
@@ -820,6 +814,14 @@ function whereBuilder(where, data){
 		}
 	});
 	return where;
+}
+
+function traverseProperties(object, string){
+   var explodedString = string.split('.');
+   for (i = 0, l = explodedString.length; i<l; i++){
+      object = object[explodedString[i]];
+   }
+   return object;
 }
 
 /////////////////////////////////////////////
