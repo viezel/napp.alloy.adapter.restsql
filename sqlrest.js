@@ -467,12 +467,13 @@ function Sync(method, model, opts) {
 		if(useStrictValidation){
 			for(var c in columns){
 				if(c == model.idAttribute){continue;}
-				if(!_.contains(attrObj, c)){
+				if(!_.contains(_.keys(attrObj), c)){
 					Ti.API.error("[SQL REST API] ITEM NOT VALID - REASON: " +c+ " is not present");
 					return;
 				}
 			}
 		}
+		
 		
 		// Create arrays for insert query
 		var names = [], values = [], q = [];
