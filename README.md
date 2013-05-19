@@ -20,6 +20,7 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 			},
 			"URL": "http://urlPathToRestAPIServer.com/api/modelname",
 			"debug": 1, //debug mode enabled
+			"useStrictValidation":1, // validates each item if all columns are present
 			"adapter" : {
 				"type" : "sqlrest",
 				"collection_name" : "modelname",
@@ -89,6 +90,16 @@ It has support for nested objects.
 		parentNode:"news.domestic"
 	}
 
+### useStrictValidation
+
+Some times its important for the app to have some certainty that the data provided by the database is valid and does not contain null data. 
+useStrictValidation runs through the fetch response data and only allows the items which have all columns in the obejct to be saved to the database.
+
+	config: {
+		...
+		"useStrictValidation":1
+	}
+ 
 
 ### localOnly
 
@@ -126,6 +137,9 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.21**  
+Added `useStrictValidation` for fetch response data.   
 
 **v0.1.20**  
 Support for parsing nested result objects.

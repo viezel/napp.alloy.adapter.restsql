@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.20
+ * @version 0.1.21
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -163,7 +163,6 @@ function apiCall(_options, _callback) {
 			'responseText' : null,
 			'offline' : true
 		});
-		//Ti.API.debug('[SQL REST API] apiCall: Offline / Local Mode');
 	}
 }
 
@@ -173,6 +172,7 @@ function Sync(method, model, opts) {
 	var DEBUG = model.config.debug;
 	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
 	var parentNode = model.config.parentNode;
+	var useStrictValidation = model.config.useStrictValidation;
 	var isCollection = (model instanceof Backbone.Collection) ? true : false;
 	
 	var singleModelRequest = null;
@@ -286,15 +286,17 @@ function Sync(method, model, opts) {
 			});
 			break;
 		case 'read':
-			if (model.id) {
+			if (model.id) { // find model by id
 				params.url = params.url + '/' + model.id;
 			}
 			
+			if(params.search){ // search mode
+                params.url = params.url + "/search/" + Ti.Network.encodeURIComponent(params.search);
+            }
 			
-			if(params.urlparams){
+			if(params.urlparams){ // build url with parameters
                 params.url = encodeData(params.urlparams, params.url);
             }
-            
 			
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
@@ -306,7 +308,7 @@ function Sync(method, model, opts) {
 					if(_.isUndefined(params.localOnly)){ //we dont want to manipulate the data on localOnly requests
 						if(!_.isArray(data)){ //its a model				
 							if(!_.isUndefined(data["is_deleted"])){ //delete item
-								deleteSQL(dat[model.idAttribute]);
+								deleteSQL(data[model.idAttribute]);
 							} else if(sqlFindItem(data[model.idAttribute]).length == 1){
 								updateSQL(data); //item exists - update it
 							} else {
@@ -317,7 +319,7 @@ function Sync(method, model, opts) {
 							for (var i in data) {
 								if(!_.isUndefined(data["is_deleted"])){ //delete item
 									deleteSQL(data[i][model.idAttribute]);
-								} else if (_.indexOf(currentModels, Number(data[i][model.idAttribute])) != -1) {
+								} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
 									updateSQL(data[i]); //item exists - update it
 								} else {
 									createSQL(data[i]); //write remote data to local sql
@@ -372,7 +374,7 @@ function Sync(method, model, opts) {
 				if (_response.success) {
 					var data = parseJSON(_response, parentNode);
 					var currentModels = sqlCurrentModels();
-					if (_.indexOf(currentModels, Number(data[model.idAttribute])) != -1) {
+					if (_.indexOf(currentModels, data[model.idAttribute]) != -1) {
 						resp = updateSQL(data); //item exists - update it
 					} else {
 						resp = createSQL(data); //write remote data to local sql
@@ -381,7 +383,7 @@ function Sync(method, model, opts) {
 				} else {
 					//error or offline - use local data
 					var currentModels = sqlCurrentModels();
-					if (_.indexOf(currentModels, Number(model.id)) != -1) {
+					if (_.indexOf(currentModels, data[model.idAttribute]) != -1) {
 						resp = updateSQL(); //item exists - update it
 					} else {
 						resp = createSQL(); //write remote data to local sql
@@ -458,6 +460,17 @@ function Sync(method, model, opts) {
 				// allow sqlite to process as null, which is the
 				// expected value for an AUTOINCREMENT field.
 				attrObj[model.idAttribute] = null;
+			}
+		}
+		
+		//validate the item
+		if(useStrictValidation){
+			for(var c in columns){
+				if(c == model.idAttribute){continue;}
+				if(!_.contains(attrObj, c)){
+					Ti.API.error("[SQL REST API] ITEM NOT VALID - REASON: " +c+ " is not present");
+					return;
+				}
 			}
 		}
 		
