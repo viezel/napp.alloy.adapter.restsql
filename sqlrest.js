@@ -126,7 +126,7 @@ function apiCall(_options, _callback) {
 		var xhr = Ti.Network.createHTTPClient({
 			timeout : _options.timeout || 7000
 		});
-		
+
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
 
@@ -147,7 +147,7 @@ function apiCall(_options, _callback) {
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 			Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
 		}
-		
+
 		for (var header in _options.headers) {
 			xhr.setRequestHeader(header, _options.headers[header]);
 		}
@@ -174,17 +174,17 @@ function Sync(method, model, opts) {
 	var parentNode = model.config.parentNode;
 	var useStrictValidation = model.config.useStrictValidation;
 	var isCollection = (model instanceof Backbone.Collection) ? true : false;
-	
+
 	var singleModelRequest = null;
 	if(lastModifiedColumn){
 		if(opts.sql && opts.sql.where ){
 			singleModelRequest = opts.sql.where[model.idAttribute];
-		} 
+		}
 		if(!singleModelRequest && opts.data && opts.data[model.idAttribute]){
 			singleModelRequest = opts.data[model.idAttribute];
 		}
 	}
-	
+
 	//REST API
 	var methodMap = {
 		'create' 	: 'POST',
@@ -199,7 +199,7 @@ function Sync(method, model, opts) {
 
 	//set default headers
 	params.headers = params.headers || {};
-	
+
 	// Send our own custom headers
 	if(model.config.hasOwnProperty("headers")) {
 		for(header in model.config.headers) {
@@ -211,16 +211,16 @@ function Sync(method, model, opts) {
 		//send last modified model datestamp to the remote server
 		var lastModifiedValue = "";
 		try {
-			lastModifiedValue = sqlLastModifiedItem();		
+			lastModifiedValue = sqlLastModifiedItem();
 		}
 		catch(e) {
-			if(DEBUG){ 
+			if(DEBUG){
 				Ti.API.debug("[SQL REST API] LASTMOD SQL FAILED: ");
-			} 
+			}
 		}
 		params.headers['Last-Modified'] = lastModifiedValue;
 	}
-	
+
 	// We need to ensure that we have a base url.
 	if (!params.url) {
 		params.url = (model.config.URL || model.url());
@@ -254,14 +254,14 @@ function Sync(method, model, opts) {
 
 	//json data transfers
 	params.headers['Content-Type'] = 'application/json';
-	
-	if(DEBUG){ 
-		Ti.API.debug("[SQL REST API] REST METHOD: " + method); 
+
+	if(DEBUG){
+		Ti.API.debug("[SQL REST API] REST METHOD: " + method);
 	}
 
 	switch (method) {
 		case 'create':
-			// convert to string for API call		
+			// convert to string for API call
 			params.data = JSON.stringify(model.toJSON());
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
@@ -277,7 +277,7 @@ function Sync(method, model, opts) {
 					//offline or error
 					resp = createSQL();
 					if(_.isUndefined(_response.offline)){
-						_.isFunction(params.error) && params.error(resp);	
+						_.isFunction(params.error) && params.error(resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -289,15 +289,15 @@ function Sync(method, model, opts) {
 			if (model.id) { // find model by id
 				params.url = params.url + '/' + model.id;
 			}
-			
+
 			if(params.search){ // search mode
                 params.url = params.url + "/search/" + Ti.Network.encodeURIComponent(params.search);
             }
-			
+
 			if(params.urlparams){ // build url with parameters
                 params.url = encodeData(params.urlparams, params.url);
             }
-			
+
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
 				Ti.API.info(params);
@@ -306,14 +306,14 @@ function Sync(method, model, opts) {
 				if (_response.success) {
 					var data = parseJSON(_response, parentNode);
 					if(_.isUndefined(params.localOnly)){ //we dont want to manipulate the data on localOnly requests
-						if(!_.isArray(data)){ //its a model				
+						if(!_.isArray(data)){ //its a model
 							if(!_.isUndefined(data["is_deleted"])){ //delete item
 								deleteSQL(data[model.idAttribute]);
 							} else if(sqlFindItem(data[model.idAttribute]).length == 1){
 								updateSQL(data); //item exists - update it
 							} else {
 								createSQL(data); //write remote data to local sql
-							}				
+							}
 						} else { //its an array of models
 							var currentModels = sqlCurrentModels();
 							for (var i in data) {
@@ -329,20 +329,14 @@ function Sync(method, model, opts) {
 					}
 					resp = readSQL();
 					_.isFunction(params.success) && params.success(resp);
-					model.trigger("fetch");
-				} else {
-					//error or offline - read local data
-					resp = readSQL();
-					if(_.isUndefined(_response.offline)){
-						//error
-						_.isFunction(params.error) && params.error(resp);	
-					} else {
-						//offline - still a data success
-						_.isFunction(params.success) && params.success(resp);
-						model.trigger("fetch");
-					}
+					model.trigger("fetch", {serverData: true});
 				}
 			});
+
+            // read local data before receiving server data
+            resp = readSQL();
+            _.isFunction(params.success) && params.success(resp);
+            model.trigger("fetch", {serverData: false});
 
 			break;
 
@@ -360,11 +354,11 @@ function Sync(method, model, opts) {
 				var str = params.url.split("?");
 				params.url = str[0] + '/' + model.id + "?" + str[1];
 			}
-			
+
 			if(params.urlparams){
                 params.url = encodeData(params.urlparams, params.url);
             }
-			
+
 			params.data = JSON.stringify(model.toJSON());
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
@@ -390,7 +384,7 @@ function Sync(method, model, opts) {
 					}
 					if(_.isUndefined(_response.offline)){
 						//error
-						_.isFunction(params.error) && params.error(resp);	
+						_.isFunction(params.error) && params.error(resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -405,7 +399,7 @@ function Sync(method, model, opts) {
 				return;
 			}
 			params.url = params.url + '/' + model.id;
-			
+
 			if(DEBUG){
 				Ti.API.info("[SQL REST API] options: ");
 				Ti.API.info(params);
@@ -419,7 +413,7 @@ function Sync(method, model, opts) {
 					resp = deleteSQL();
 					if(_.isUndefined(_response.offline)){
 						//error
-						_.isFunction(params.error) && params.error(resp);	
+						_.isFunction(params.error) && params.error(resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -434,12 +428,12 @@ function Sync(method, model, opts) {
 	/////////////////////////////////////////////
 	function createSQL(data) {
 		var attrObj = {};
-		
+
 		if(DEBUG){
 			Ti.API.debug("[SQL REST API] createSQL data:");
 			Ti.API.debug(data);
 		}
-		
+
 		if(data){
 			attrObj = data;
 		} else {
@@ -449,7 +443,7 @@ function Sync(method, model, opts) {
 				Ti.API.error("[SQL REST API] Its a collection - error !");
 			}
 		}
-		
+
 		if (!attrObj[model.idAttribute]) {
 			if (model.idAttribute === ALLOY_ID_DEFAULT) {
 				// alloy-created GUID field
@@ -462,7 +456,7 @@ function Sync(method, model, opts) {
 				attrObj[model.idAttribute] = null;
 			}
 		}
-		
+
 		//validate the item
 		if(useStrictValidation){
 			for(var c in columns){
@@ -473,8 +467,8 @@ function Sync(method, model, opts) {
 				}
 			}
 		}
-		
-		
+
+
 		// Create arrays for insert query
 		var names = [], values = [], q = [];
 		for (var k in columns) {
@@ -482,7 +476,7 @@ function Sync(method, model, opts) {
 			if( _.isObject(attrObj[k]) ) {
 				values.push(JSON.stringify(attrObj[k]));
 			} else {
-				values.push(attrObj[k]);	
+				values.push(attrObj[k]);
 			}
 			q.push('?');
 		}
@@ -497,7 +491,7 @@ function Sync(method, model, opts) {
 		db = Ti.Database.open(dbName);
 		db.execute('BEGIN;');
 		db.execute(sqlInsert, values);
-		
+
 		// get the last inserted id
 		if (model.id === null) {
 			var sqlId = "SELECT last_insert_rowid();";
@@ -509,10 +503,10 @@ function Sync(method, model, opts) {
 				Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
 			}
 		}
-		
+
 		db.execute('COMMIT;');
 		db.close();
-		
+
 		return attrObj;
 	}
 
@@ -521,11 +515,11 @@ function Sync(method, model, opts) {
 			Ti.API.debug("[SQL REST API] readSQL");
 		}
 		var sql = opts.query || 'SELECT * FROM ' + table;
-		
+
 		// execute the select query
 		db = Ti.Database.open(dbName);
-		
-		
+
+
 		if (opts.query) {
 			var rs = db.execute(opts.query.sql, opts.query.params);
 		} else {
@@ -571,7 +565,7 @@ function Sync(method, model, opts) {
 
 		// shape response based on whether it's a model or collection
 		model.length = len;
-		
+
 		if(DEBUG){Ti.API.debug("readSQL length: " + len);}
 		return len === 1 ? resp = values[0] : resp = values;
 	}
@@ -591,7 +585,7 @@ function Sync(method, model, opts) {
 				Ti.API.error("Its a collection - error!");
 			}
 		}
-		
+
 		// Create arrays for insert query
 		var names = [], values = [], q = [];
 		for (var k in columns) {
@@ -600,7 +594,7 @@ function Sync(method, model, opts) {
 				if( _.isObject(attrObj[k]) ) {
 					values.push(JSON.stringify(attrObj[k]));
 				} else {
-					values.push(attrObj[k]);	
+					values.push(attrObj[k]);
 				}
 				q.push('?');
 			}
@@ -609,21 +603,21 @@ function Sync(method, model, opts) {
 		// compose the update query
 		var sql = 'UPDATE ' + table + ' SET ' + names.join(',') + ' WHERE ' + model.idAttribute + '=?';
 		values.push(attrObj[model.idAttribute]);
-		if(DEBUG){ 
-			Ti.API.debug("updateSQL sql: " + sql); 
-			Ti.API.debug(values); 
+		if(DEBUG){
+			Ti.API.debug("updateSQL sql: " + sql);
+			Ti.API.debug(values);
 		}
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
-		
+
 		if(lastModifiedColumn && _.isUndefined(params.disableLastModified)){
 			var updateSQL = "UPDATE " + table + " SET " + lastModifiedColumn + " = DATETIME('NOW') WHERE " + model.idAttribute +"=?";
 			db.execute(updateSQL, attrObj[model.idAttribute]);
 		}
-		
+
 		db.close();
-		
+
 		return attrObj;
 	}
 
@@ -651,7 +645,7 @@ function Sync(method, model, opts) {
 		db.close();
 		return output;
 	}
-	
+
 	function sqlFindItem(_id) {
 		var sql = 'SELECT ' + model.idAttribute + ' FROM ' + table + ' WHERE ' + model.idAttribute + '=?';
 		db = Ti.Database.open(dbName);
@@ -665,7 +659,7 @@ function Sync(method, model, opts) {
 		db.close();
 		return output;
 	}
-	
+
 	function sqlLastModifiedItem(){
 		if(singleModelRequest || !isCollection){
 			//model
@@ -674,7 +668,7 @@ function Sync(method, model, opts) {
 			//collection
 			var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL ORDER BY ' + lastModifiedColumn + ' LIMIT 0,1';
 		}
-		
+
 		db = Ti.Database.open(dbName);
 		rs = db.execute(sql);
 		var output = null;
@@ -685,16 +679,16 @@ function Sync(method, model, opts) {
 		db.close();
 		return output;
 	}
-	
-	
+
+
 	function parseJSON(_response, parentNode){
 		var data = JSON.parse(_response.responseText);
 		if(!_.isUndefined(parentNode)){
 			data = traverseProperties(data, parentNode);
 		}
-		if(DEBUG){ 
+		if(DEBUG){
 			Ti.API.info("[SQL REST API] server response: ");
-			Ti.API.debug(data) 
+			Ti.API.debug(data)
 		}
 		return data;
 	}
@@ -711,14 +705,14 @@ var encodeData = function(obj, url) {
 	for(var p in obj){
 		str.push(Ti.Network.encodeURIComponent(p) + "=" + Ti.Network.encodeURIComponent(obj[p]));
 	}
-		
+
 	if(_.indexOf(url, "?") == -1) {
 		return url + "?" + str.join("&");
 	} else {
 		return url + "&" + str.join("&");
 	}
 }
-	
+
 
 function _valueType(value) {
 	if ( typeof value == 'string') {
@@ -818,7 +812,7 @@ function whereBuilder(where, data){
 		if(_.isArray(v) ) { //select multiple items
 			var innerWhere = [];
 			_.each(v, function(value) {
-				innerWhere.push(f + " = " + _valueType(value));	
+				innerWhere.push(f + " = " + _valueType(value));
 			});
 			where.push(innerWhere.join(' OR '));
 		} else if(_.isObject(v)){
@@ -1048,4 +1042,4 @@ module.exports.afterModelCreate = function(Model, name) {
 	return Model;
 };
 
-module.exports.sync = Sync; 
+module.exports.sync = Sync;
