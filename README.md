@@ -80,14 +80,14 @@ Use the `parentNode` to specify which child object you want to parse.
 
 	config: {
 		...
-		parentNode:"results"
+		"parentNode" : "results"
 	}
 	
 It has support for nested objects. 
 	
 	config: {
 		...
-		parentNode:"news.domestic"
+		"parentNode" : "news.domestic"
 	}
 
 ### useStrictValidation
@@ -110,6 +110,20 @@ collection.fetch({
 	localOnly:true
 });
 ```
+
+
+### initFetchWithLocalData
+
+Set this property to true, if you want to get the local data immediately, and get the remote data when the server returns it.
+
+*Notice: This will trigger two fetch calls.* 
+
+
+	config: {
+		...
+		"initFetchWithLocalData" : true
+	}
+
 
 ### Extended SQL interface
 
@@ -137,6 +151,9 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.22**  
+Added `initFetchWithLocalData` for fetch local data before remote.  
 
 **v0.1.21**  
 Added `useStrictValidation` for fetch response data.   
