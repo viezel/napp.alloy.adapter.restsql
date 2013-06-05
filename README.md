@@ -152,6 +152,10 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.23**  
+Added `initFetchWithLocalData` to fetch params.   
+Better logic for update/create. Now local db handles duplicate ids.   
+
 **v0.1.22**  
 Added `initFetchWithLocalData` for fetch local data before remote.  
 
