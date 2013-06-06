@@ -152,6 +152,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.24**  
+Bugfix: Auto ID's are not stored when idAttribute is not set  
+
 **v0.1.23**  
 Added `initFetchWithLocalData` to fetch params.   
 Better logic for update/create. Now local db handles duplicate ids.   

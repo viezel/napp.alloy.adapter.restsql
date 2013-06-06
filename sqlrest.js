@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.23
+ * @version 0.1.24
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -461,7 +461,7 @@ function Sync(method, model, opts) {
 			if (model.idAttribute === ALLOY_ID_DEFAULT) {
 				// alloy-created GUID field
 				attrObj.id = util.guid();
-				attrObj[model.idAttribute] = model.id;
+				attrObj[model.idAttribute] = attrObj.id;
 			} else {
 				// idAttribute not assigned by alloy. Leave it empty and
 				// allow sqlite to process as null, which is the
