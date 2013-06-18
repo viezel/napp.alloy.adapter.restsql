@@ -417,6 +417,10 @@ function Sync(method, model, opts) {
 		if(!data && !isCollection){
 			data = model.toJSON();
 		}
+		if(!data){
+			// its empty
+			return;
+		}
 		if(!_.isArray(data)){ // its a model				
 			if(!_.isUndefined(data["is_deleted"])){ //delete item
 				deleteSQL(data[model.idAttribute]);
