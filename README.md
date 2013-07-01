@@ -34,7 +34,7 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 			"headers": { //your custom headers
 	            "Accept": "application/vnd.stackmob+json; version=0",
 		        "X-StackMob-API-Key": "your-stackmob-key"
-	        },
+	        }
 		},
 		extendModel : function(Model) {
 			_.extend(Model.prototype, {});

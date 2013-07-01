@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.24
+ * @version 0.1.25
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -432,7 +432,7 @@ function Sync(method, model, opts) {
 		} else { //its an array of models
 			var currentModels = sqlCurrentModels();
 			for (var i in data) {
-				if(!_.isUndefined(data["is_deleted"])){ //delete item
+				if(!_.isUndefined(data[i]["is_deleted"])){ //delete item
 					deleteSQL(data[i][model.idAttribute]);
 				} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
 					updateSQL(data[i]); //item exists - update it
