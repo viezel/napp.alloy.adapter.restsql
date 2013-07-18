@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.25
+ * @version 0.1.26
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -701,7 +701,7 @@ function Sync(method, model, opts) {
 	function parseJSON(_response, parentNode){
 		var data = JSON.parse(_response.responseText);
 		if(!_.isUndefined(parentNode)){
-			data = traverseProperties(data, parentNode);
+			data = _.isFunction(parentNode) ? parentNode(data) : traverseProperties(data, parentNode);
 		}
 		if(DEBUG){ 
 			Ti.API.info("[SQL REST API] server response: ");

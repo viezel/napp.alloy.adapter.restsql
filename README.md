@@ -90,6 +90,34 @@ It has support for nested objects.
 		"parentNode" : "news.domestic"
 	}
 
+You can also specify this as a function instead to allow custom parsing the feed. Here is an example: 
+
+*Feed:* 
+http://www.google.com/calendar/feeds/developer-calendar@google.com/public/full?alt=json&orderby=starttime&max-results=15&singleevents=true&sortorder=ascending&futureevents=true
+
+*Custom parsing:*
+
+```javascript
+parentNode: function (data) {
+	var entries = [];
+
+	_.each(data.feed.entry, function(_entry) {
+		var entry = {};
+
+		entry.id = _entry.id.$t;
+		entry.startTime = _entry.gd$when[0].startTime;
+		entry.endTime = _entry.gd$when[0].endTime;
+		entry.title = _entry.title.$t;
+		entry.content = _entry.content.$t;
+
+		entries.push(entry);
+	});
+
+	return entries;
+}
+```
+
+
 ### useStrictValidation
 
 Some times its important for the app to have some certainty that the data provided by the database is valid and does not contain null data. 
@@ -151,6 +179,12 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.26** 
+Added support parentNode as a function for custom parsing. thanks @FokkeZB
+
+**v0.1.25**  
+More bugfixes
 
 **v0.1.24**  
 Bugfix: Auto ID's are not stored when idAttribute is not set  
