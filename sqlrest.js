@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.26
+ * @version 0.1.27
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -745,7 +745,7 @@ function _buildQuery(table, opts) {
 	var sql = 'SELECT *';
 	if (opts.select) {
 		sql = 'SELECT ';
-		if ( typeof opts.select == 'array') {
+		if ( _.isArray(opts.select) ) {
 			sql += opts.select.join(", ");
 		} else {
 			sql += opts.select;
@@ -760,7 +760,7 @@ function _buildQuery(table, opts) {
 			where = [];
 			where = whereBuilder(where, opts.where);
 			where = where.join(' AND ');
-		} else if ( typeof opts.where === 'array') {
+		} else if ( _.isArray(opts.where) ) {
 			where = opts.where.join(' AND ');
 		} else {
 			where = opts.where;
@@ -772,7 +772,7 @@ function _buildQuery(table, opts) {
 	}
 	if (opts.orderBy) {
 		var order;
-		if ( typeof opts.orderBy === 'array') {
+		if ( _.isArray(opts.orderBy) ) {
 			order = opts.orderBy.join(', ');
 		} else {
 			order = opts.orderBy;
