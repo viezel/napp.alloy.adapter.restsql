@@ -756,12 +756,12 @@ function _buildQuery(table, opts) {
 
 	if (opts.where) {
 		var where;
-		if ( typeof opts.where === 'object') {
+		if ( _.isArray(opts.where) ) {
+			where = opts.where.join(' AND ');
+		} else if ( typeof opts.where === 'object' ) {
 			where = [];
 			where = whereBuilder(where, opts.where);
 			where = where.join(' AND ');
-		} else if ( _.isArray(opts.where) ) {
-			where = opts.where.join(' AND ');
 		} else {
 			where = opts.where;
 		}
