@@ -3,18 +3,18 @@ napp.alloy.adapter.restsql
 
 ## Description
 
-SQL & RestAPI Sync Adapter Test with Behave.js.
-
+SQL & RestAPI Sync Adapter Test with Behave.js. 
+ 
 
 ## How to test
 
 Since the RESTSQL adapter uses both remote server and local database as persistance storage, you have 2 test methods:
 
 * Local Test: Go offline with your simulator/device or enter a fake url for the remote server. This test will online test the database storage.
-* Full Test: Test your server and the local database.
+* Full Test: Test your server and the local database. 
 
 
-### Controller index.js
+### Controller index.js 
 
 Add the following code to your index.js controller to enable the testing.
 
@@ -25,8 +25,8 @@ Add the following code to your index.js controller to enable the testing.
 
 Create the folders if they dont exist.
 
-	Add the `restsql.js` to `PROJECT_FOLDER/assets/alloy/sync/`.
-	Add the `sqlrest_model_spec.js` to `PROJECT_FOLDER/assets/spec/`.
+	Add the `restsql.js` to `PROJECT_FOLDER/assets/alloy/sync/`. 
+	Add the `sqlrest_model_spec.js` to `PROJECT_FOLDER/assets/spec/`. 
 	Add the `behave.js` to `PROJECT_FOLDER/lib/`.
 
 ### Create a test model
@@ -95,7 +95,7 @@ Your result should look like this
 	[DEBUG] :  [behave] I expected Copenhagen to be Copenhagen
 	[DEBUG] :  [behave] I expected Denmark to be Denmark
 	[DEBUG] :  [behave] I expected Danish wines are horrible. to be Danish wines are horrible.
-	[DEBUG] :  [behave]
+	[DEBUG] :  [behave] 
 	[DEBUG] :  [behave] *******************************************
 	[DEBUG] :  [behave] * \o/ T E S T  R U N  C O M P L E T E \o/ *
 	[DEBUG] :  [behave] *******************************************
@@ -104,10 +104,10 @@ Your result should look like this
 
 ## Author
 
-**Mads Møller**
-web: http://www.napp.dk
-email: mm@napp.dk
-twitter: @nappdev
+**Mads Møller**  
+web: http://www.napp.dk  
+email: mm@napp.dk  
+twitter: @nappdev  
 
 ## License
 
