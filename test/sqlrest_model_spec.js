@@ -25,8 +25,8 @@ describe('SQLREST: create a model', function() {
 							expect(model.id).notToBe(null);
 							expect(model.id).toBe(_returnModel.id);
 							expect(model.get("name")).toBe('FOUR VINES MAVERICK');
-							expect(model.get("year")).toBe("2011"); 
-							
+							expect(model.get("year")).toBe("2011");
+
 							_done();
 						},
 						error: function(_returnModel){
@@ -34,13 +34,13 @@ describe('SQLREST: create a model', function() {
 							expect(model.id).notToBe(null);
 							expect(model.id).toBe(_returnModel.id);
 							expect(model.get("name")).toBe('FOUR VINES MAVERICK');
-							expect(model.get("year")).toBe("2011"); 
-							
+							expect(model.get("year")).toBe("2011");
+
 							_done();
 						}
 					});
 				}, 10000);
-				
+
 				done();
 			},
 			error : function(returnModel) {
@@ -56,8 +56,8 @@ describe('SQLREST: create a model', function() {
 							expect(model.id).notToBe(null);
 							expect(model.id).toBe(_returnModel.id);
 							expect(model.get("name")).toBe('FOUR VINES MAVERICK');
-							expect(model.get("year")).toBe("2011"); 
-							
+							expect(model.get("year")).toBe("2011");
+
 							_done();
 						},
 						error: function(_returnModel){
@@ -65,13 +65,13 @@ describe('SQLREST: create a model', function() {
 							expect(model.id).notToBe(null);
 							expect(model.id).toBe(_returnModel.id);
 							expect(model.get("name")).toBe('FOUR VINES MAVERICK');
-							expect(model.get("year")).toBe("2011"); 
-							
+							expect(model.get("year")).toBe("2011");
+
 							_done();
 						}
 					});
 				}, 10000);
-				
+
 				done();
 			}
 		});
@@ -96,7 +96,7 @@ describe('SQLREST: create and update a model', function() {
 				model.set({
 					"id" : returnModel.id
 				});
-				
+
 				it.eventually('*** create - callback the model', function(_done) {
 					model.fetch({
 						success: function(_returnModel){
@@ -104,7 +104,7 @@ describe('SQLREST: create and update a model', function() {
 							expect(model.id).toBe(returnModel.id);
 							expect(model.get("name")).toBe('CHATEAU LE DOYENNE');
 							expect(model.get("year")).toBe("2012");
-							
+
 							//UPDATE the model
 							it.eventually('*** updates the created model', function(_donedone) {
 								var model = Alloy.createModel('wine', {
@@ -116,7 +116,7 @@ describe('SQLREST: create and update a model', function() {
 									region : "Copenhagen",
 									description : "Danish wines are horrible."
 								});
-								
+
 								model.save({}, {
 									success : function(_returnModel2) {
 										expect(model.id).notToBe(null);
@@ -135,9 +135,9 @@ describe('SQLREST: create and update a model', function() {
 										_donedone();
 									}
 								});
-			
+
 							}, 10000);
-							
+
 							_done();
 						},
 						error: function(_returnModel){
@@ -147,7 +147,7 @@ describe('SQLREST: create and update a model', function() {
 							expect(model.id).toBe(returnModel.id);
 							expect(model.get("name")).toBe('CHATEAU LE DOYENNE');
 							expect(model.get("year")).toBe("2012");
-							
+
 							//UPDATE the model
 							it.eventually('*** updates the created model', function(_donedone) {
 								var model = Alloy.createModel('wine', {
@@ -159,7 +159,7 @@ describe('SQLREST: create and update a model', function() {
 									region : "Copenhagen",
 									description : "Danish wines are horrible."
 								});
-								
+
 								model.save({}, {
 									success : function(_returnModel2) {
 										expect(model.id).notToBe(null);
@@ -178,9 +178,9 @@ describe('SQLREST: create and update a model', function() {
 										_donedone();
 									}
 								});
-			
+
 							}, 10000);
-							
+
 							_done();
 						}
 					});
@@ -195,7 +195,7 @@ describe('SQLREST: create and update a model', function() {
 				model.set({
 					"id" : returnModel.id
 				});
-				
+
 				it.eventually('*** create - callback the model', function(_done) {
 					model.fetch({
 						success: function(_returnModel){
@@ -203,7 +203,7 @@ describe('SQLREST: create and update a model', function() {
 							expect(model.id).toBe(returnModel.id);
 							expect(model.get("name")).toBe('CHATEAU LE DOYENNE');
 							expect(model.get("year")).toBe("2012");
-							
+
 							//UPDATE the model
 							it.eventually('*** updates the created model', function(_donedone) {
 								var model = Alloy.createModel('wine', {
@@ -215,7 +215,7 @@ describe('SQLREST: create and update a model', function() {
 									region : "Copenhagen",
 									description : "Danish wines are horrible."
 								});
-								
+
 								model.save({}, {
 									success : function(_returnModel2) {
 										expect(model.id).notToBe(null);
@@ -234,9 +234,9 @@ describe('SQLREST: create and update a model', function() {
 										_donedone();
 									}
 								});
-			
+
 							}, 10000);
-							
+
 							_done();
 						},
 						error: function(_returnModel){
@@ -246,7 +246,7 @@ describe('SQLREST: create and update a model', function() {
 							expect(model.id).toBe(returnModel.id);
 							expect(model.get("name")).toBe('CHATEAU LE DOYENNE');
 							expect(model.get("year")).toBe("2012");
-							
+
 							//UPDATE the model
 							it.eventually('*** updates the created model', function(_donedone) {
 								var model = Alloy.createModel('wine', {
@@ -277,9 +277,9 @@ describe('SQLREST: create and update a model', function() {
 										_donedone();
 									}
 								});
-			
+
 							}, 10000);
-							
+
 							_done();
 						}
 					});
@@ -289,35 +289,35 @@ describe('SQLREST: create and update a model', function() {
 			}
 		});
 	}, 10000);
-}); 
+});
 
 
-describe('SQLREST: find models', function() {	
+describe('SQLREST: find models', function() {
 	it.eventually('*** fetches all models', function(done) {
 		var collection = Alloy.createCollection('wine');
 		collection.fetch({
 			success:function(models){
 				expect(collection).notToBe(null);
 				expect(collection.length).toBe(2); //this does not need to be true. Depends on your remote server
-				
+
 				//clean up after test
 				for (var j = 0; j < collection.length; j++) {
-					collection.at(j).destroy();	
+					collection.at(j).destroy();
 				}
-				
+
 				done();
 			},
 			error:function(){
 				expect(collection).notToBe(null);
 				expect(collection.length).toBe(2); //this does not need to be true. Depends on your remote server
-				
+
 				//clean up after test
 				for (var j = 0; j < collection.length; j++) {
-					collection.at(j).destroy();	
+					collection.at(j).destroy();
 				}
-				
+
 				done();
 			}
 		});
-	}, 10000);	
-}); 
+	}, 10000);
+});

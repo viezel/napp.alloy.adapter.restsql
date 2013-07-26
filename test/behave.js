@@ -3,12 +3,12 @@ var suites = [],
 	specCount = 0,
 	failures = 0,
 	successes = 0;
-	
+
 //add to log output
 function log(text) {
     output.push('[behave] '+text);
 }
-	
+
 function Suite(descText) {
 	this.desc = descText
 	this.specs = [];
@@ -18,7 +18,7 @@ Suite.prototype.evaluate = function(cb) {
 	log('Describing '+this.desc+':');
 	var executing = false,
 		that = this;
-		
+
 	var timer = setInterval(function() {
 		if (that.specs.length > 0 && !executing) {
     		executing = true;
@@ -52,11 +52,11 @@ Spec.prototype.addExpectation = function(ex) {
 Spec.prototype.evaluate = function(cb) {
 	log('it '+this.desc);
 	specCount++;
-	
+
 	if (this.async) {
 		var time = 0,
 			that = this;
-		
+
 		var timer = setInterval(function() {
 			if (that.expectations.length > 0 && that.done) {
 	    		var ex = that.expectations.shift();
@@ -66,7 +66,7 @@ Spec.prototype.evaluate = function(cb) {
 				clearInterval(timer);
 				cb();
 		    }
-		    
+
 		    time=time+50;
 		},50);
 	}
@@ -126,42 +126,42 @@ exports.andSetup = function(global) {
 		//create a new suite object for the scope of the current "describe"
 		var SUITE = new Suite(suiteDesc);
 		suites.push(SUITE);
-		
+
 		//Now, create a new global "it" which has SUITE in scope
 		global.it = function(specDesc, specClosure) {
 		    var SPEC = new Spec(specDesc);
 			SUITE.addSpec(SPEC);
-			
+
 			//Now, create a new global "expect" which has SPEC in scope
 			global.expect = function(someValue) {
 				var ex = new Expectation(someValue);
 				SPEC.addExpectation(ex);
 				return ex;
 			};
-			
+
 			//now run spec
 			specClosure();
 			SPEC.done = true;
 		};
-		
+
 		//Async specs
 		global.it.eventually = function(specDesc, specClosure, timeout) {
 			var SPEC = new Spec(specDesc, true, timeout);
 			SUITE.addSpec(SPEC);
-			
+
 			//Now, create a new global "expect" which has SPEC in scope
 			global.expect = function(someValue) {
 				var ex = new Expectation(someValue);
 				SPEC.addExpectation(ex);
 				return ex;
 			};
-			
+
 			//now run spec
 			specClosure(function() {
 				SPEC.done = true;
 			});
 		};
-		
+
 		//now run suite
 		suiteClosure();
 	};
@@ -173,10 +173,10 @@ exports.run = function() {
 	failures = 0;
 	successes = 0;
 	output = [];
-	
+
     log('');
     log('Oh, behave! Testing in progress...');
-    
+
     var executing = false;
     var timer = setInterval(function() {
     	if (suites.length > 0 && !executing) {
@@ -192,7 +192,7 @@ exports.run = function() {
 		    log('* \\o/ T E S T  R U N  C O M P L E T E \\o/ *');
 		    log('*******************************************');
 			log('You ran '+specCount+' specs with '+failures+' failures and '+successes+' successes.');
-					
+
 			//Flush output
 			Ti.API.info(output.join('\n'));
 			clearInterval(timer);
