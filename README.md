@@ -180,11 +180,14 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.28**  
+Added support for `returnExactServerResponse` which is useful for remote search. 
+
 **v0.1.27**  
 Bug fix for building sql queries. typeof array corrected to _.isArray
 
 **v0.1.26** 
-Added support parentNode as a function for custom parsing. thanks @FokkeZB
+Added support for `parentNode` as a function for custom parsing. thanks @FokkeZB
 
 **v0.1.25**  
 More bugfixes
