@@ -180,6 +180,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.29**  
+Small bugfix. Issue when using `localOnly` and `initFetchWithLocalData` together.  
+
 **v0.1.28**  
 Added support for `returnExactServerResponse` which is useful for remote search. 
 
