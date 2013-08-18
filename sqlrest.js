@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.29
+ * @version 0.1.30
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -131,22 +131,49 @@ function apiCall(_options, _callback) {
 		xhr.open(_options.type, _options.url);
 
 		xhr.onload = function() {
+			var responseJSON, success = true, error;
+			
+			// parse JSON
+			try {
+				responseJSON = JSON.parse(xhr.responseText);
+			} catch (e) {
+				Ti.API.error('[SQL REST API] apiCall ERROR: ' + e.message);
+				Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
+				success = false;
+				error = e.message;
+			}
 			_callback({
-				'success' : true,
-				'responseText' : xhr.responseText || null,
-				'responseData' : xhr.responseData || null
+				success : success,
+				status : success ? (xhr.status == 200 ? "ok" : xhr.status) : 'error',
+				code : xhr.status,
+				data: error,
+				responseText : xhr.responseText || null,
+				responseJSON : responseJSON || null
 			});
 		};
 
 		//Handle error
 		xhr.onerror = function() {
+			var responseJSON;
+			try {
+				responseJSON = JSON.parse(xhr.responseText);
+			} catch (e) {
+			}
+
 			_callback({
-				'success' : false,
-				'responseText' : xhr.responseText
+				success : false,
+				status : "error",
+				code : xhr.status,
+				data : e.error,
+				responseText : xhr.responseText,
+				responseJSON : responseJSON || null
 			});
+			
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 			Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
-		}
+		};
+		
+		// headers
 		for (var header in _options.headers) {
 			xhr.setRequestHeader(header, _options.headers[header]);
 		}
@@ -154,13 +181,14 @@ function apiCall(_options, _callback) {
 		if (_options.beforeSend) {
 			_options.beforeSend(xhr);
 		}
+		
 		xhr.send(_options.data || null);
 	} else {
 		//we are offline
 		_callback({
-			'success' : false,
-			'responseText' : null,
-			'offline' : true
+			success : false,
+			responseText : null,
+			offline : true
 		});
 	}
 }
@@ -247,7 +275,7 @@ function Sync(method, model, opts) {
 				params.data._method = type;
 			params.type = 'POST';
 			params.beforeSend = function(xhr) {
-				params.headers['X-HTTP-Method-Override'] = type
+				params.headers['X-HTTP-Method-Override'] = type;
 			};
 		}
 	}
@@ -308,14 +336,13 @@ function Sync(method, model, opts) {
 				Ti.API.info(params);
 			}
 
-			if (!params.localOnly && (params.initFetchWithLocalData || initFetchWithLocalData) ) {
+			if (!params.localOnly && (params.initFetchWithLocalData || initFetchWithLocalData)) {
 				// read local data before receiving server data
 				resp = readSQL();
 				_.isFunction(params.success) && params.success(resp);
 				model.trigger("fetch", {
 					serverData : false
 				});
-				return;
 			}
 
 			apiCall(params, function(_response) {
@@ -732,13 +759,13 @@ function Sync(method, model, opts) {
 	}
 
 	function parseJSON(_response, parentNode) {
-		var data = JSON.parse(_response.responseText);
+		var data = _response.responseJSON; //JSON.parse(_response.responseText);
 		if (!_.isUndefined(parentNode)) {
 			data = _.isFunction(parentNode) ? parentNode(data) : traverseProperties(data, parentNode);
 		}
 		if (DEBUG) {
 			Ti.API.info("[SQL REST API] server response: ");
-			Ti.API.debug(data)
+			Ti.API.debug(data);
 		}
 		return data;
 	}
@@ -749,7 +776,7 @@ function Sync(method, model, opts) {
 // SQL HELPERS
 /////////////////////////////////////////////
 
-var encodeData = function(obj, url) {
+function encodeData(obj, url) {
 	var str = [];
 	for (var p in obj) {
 		str.push(Ti.Network.encodeURIComponent(p) + "=" + Ti.Network.encodeURIComponent(obj[p]));
@@ -761,6 +788,7 @@ var encodeData = function(obj, url) {
 		return url + "&" + str.join("&");
 	}
 }
+
 function _valueType(value) {
 	if ( typeof value == 'string') {
 		return "'" + value + "'";
@@ -786,9 +814,9 @@ function _buildQuery(table, opts) {
 
 	if (opts.where) {
 		var where;
-		if ( _.isArray(opts.where) ) {
+		if (_.isArray(opts.where)) {
 			where = opts.where.join(' AND ');
-		} else if ( typeof opts.where === 'object' ) {
+		} else if ( typeof opts.where === 'object') {
 			where = [];
 			where = whereBuilder(where, opts.where);
 			where = where.join(' AND ');
@@ -798,7 +826,7 @@ function _buildQuery(table, opts) {
 
 		sql += ' WHERE ' + where;
 	} else {
-		sql += ' WHERE 1=1'
+		sql += ' WHERE 1=1';
 	}
 	if (opts.orderBy) {
 		var order;

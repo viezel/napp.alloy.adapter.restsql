@@ -180,6 +180,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.30**  
+JSON.parse errors are now caught.  
+
 **v0.1.29**  
 Small bugfix. Issue when using `localOnly` and `initFetchWithLocalData` together.  
 
