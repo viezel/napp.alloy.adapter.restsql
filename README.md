@@ -180,6 +180,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.31**  
+Bugfix for Last Modified Column.  
+
 **v0.1.30**  
 JSON.parse errors are now caught.  
 
