@@ -154,17 +154,18 @@ function apiCall(_options, _callback) {
 
 		//Handle error
 		xhr.onerror = function() {
-			var responseJSON;
+			var responseJSON, error;
 			try {
 				responseJSON = JSON.parse(xhr.responseText);
 			} catch (e) {
+				error = e.message;
 			}
 
 			_callback({
 				success : false,
 				status : "error",
 				code : xhr.status,
-				data : e.error,
+				data : error,
 				responseText : xhr.responseText,
 				responseJSON : responseJSON || null
 			});
