@@ -153,6 +153,16 @@ Set this property to true, if you want to get the local data immediately, and ge
 	}
 
 
+### returnErrorResponse
+
+Set this proerty to true if you want the error response object from the remote server. Default behaviour is not to return this, but return the data stored locally. 
+
+	config: {
+		...
+		"returnErrorResponse" : true
+	}
+
+
 ### Extended SQL interface
 
 You can perform a local query, and use a bunch of SQL commands without having to write the actual query. The query is also support btw.
@@ -179,6 +189,9 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.32**
+Added `returnErrorResponse` enables the developer to get the error response object from the remote server. 
 
 **v0.1.31**  
 Bugfix for Last Modified Column.  

@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.31
+ * @version 0.1.32
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -137,8 +137,8 @@ function apiCall(_options, _callback) {
 			try {
 				responseJSON = JSON.parse(xhr.responseText);
 			} catch (e) {
-				Ti.API.error('[SQL REST API] apiCall ERROR: ' + e.message);
-				Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
+				Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + e.message);
+				Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + xhr.responseText);
 				success = false;
 				error = e.message;
 			}
@@ -153,7 +153,7 @@ function apiCall(_options, _callback) {
 		};
 
 		//Handle error
-		xhr.onerror = function() {
+		xhr.onerror = function(err) {
 			var responseJSON, error;
 			try {
 				responseJSON = JSON.parse(xhr.responseText);
@@ -165,6 +165,7 @@ function apiCall(_options, _callback) {
 				success : false,
 				status : "error",
 				code : xhr.status,
+				error: err.error,
 				data : error,
 				responseText : xhr.responseText,
 				responseJSON : responseJSON || null
@@ -172,6 +173,7 @@ function apiCall(_options, _callback) {
 			
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 			Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
+			Ti.API.error('[SQL REST API] apiCall ERROR MSG: ' + err.error);
 		};
 		
 		// headers
@@ -204,7 +206,8 @@ function Sync(method, model, opts) {
 	var useStrictValidation = model.config.useStrictValidation;
 	var initFetchWithLocalData = model.config.initFetchWithLocalData;
 	var isCollection = ( model instanceof Backbone.Collection) ? true : false;
-
+	var returnErrorResponse = model.config.returnErrorResponse;
+	
 	var singleModelRequest = null;
 	if (lastModifiedColumn) {
 		if (opts.sql && opts.sql.where) {
@@ -307,7 +310,7 @@ function Sync(method, model, opts) {
 					resp = saveData();
 					if (_.isUndefined(_response.offline)) {
 						// error
-						_.isFunction(params.error) && params.error(resp);
+						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -361,7 +364,7 @@ function Sync(method, model, opts) {
 					resp = readSQL();
 					if (_.isUndefined(_response.offline)) {
 						//error
-						_.isFunction(params.error) && params.error(resp);
+						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -406,7 +409,7 @@ function Sync(method, model, opts) {
 					resp = saveData();
 					if (_.isUndefined(_response.offline)) {
 						//error
-						_.isFunction(params.error) && params.error(resp);
+						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -435,7 +438,7 @@ function Sync(method, model, opts) {
 					resp = deleteSQL();
 					if (_.isUndefined(_response.offline)) {
 						//error
-						_.isFunction(params.error) && params.error(resp);
+						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
