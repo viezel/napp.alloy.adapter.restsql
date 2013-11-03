@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.33
+ * @version 0.1.34
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -201,7 +201,12 @@ function Sync(method, model, opts) {
 	model.idAttribute = model.config.adapter.idAttribute;
 	//fix for collection
 	var DEBUG = model.config.debug;
+	
+	// last modified 
 	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
+	var addModifedToUrl = model.config.adapter.addModifedToUrl;
+	var lastModifiedDateFormat = model.config.adapter.lastModifiedDateFormat;
+	
 	var parentNode = model.config.parentNode;
 	var useStrictValidation = model.config.useStrictValidation;
 	var initFetchWithLocalData = model.config.initFetchWithLocalData;
@@ -240,6 +245,15 @@ function Sync(method, model, opts) {
 		}
 	}
 
+	// We need to ensure that we have a base url.
+	if (!params.url) {
+		params.url = (model.config.URL || model.url());
+		if (!params.url) {
+			Ti.API.error("[SQL REST API] ERROR: NO BASE URL");
+			return;
+		}
+	}
+	
 	if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
 		//send last modified model datestamp to the remote server
 		var lastModifiedValue = "";
@@ -251,15 +265,6 @@ function Sync(method, model, opts) {
 			}
 		}
 		params.headers['Last-Modified'] = lastModifiedValue;
-	}
-
-	// We need to ensure that we have a base url.
-	if (!params.url) {
-		params.url = (model.config.URL || model.url());
-		if (!params.url) {
-			Ti.API.error("[SQL REST API] ERROR: NO BASE URL");
-			return;
-		}
 	}
 
 	// For older servers, emulate JSON by encoding the request into an HTML-form.
@@ -334,6 +339,14 @@ function Sync(method, model, opts) {
 			if (params.urlparams) {
 				// build url with parameters
 				params.url = encodeData(params.urlparams, params.url);
+			}
+			
+			// check is all the necessary info is in place for last modified
+			if (lastModifiedColumn && addModifedToUrl && lastModifiedValue) {
+				// add last modified date to url
+				var obj = {};
+				obj[lastModifiedColumn] = lastModifiedValue;
+				params.url = encodeData(obj, params.url);
 			}
 
 			if (DEBUG) {
@@ -543,8 +556,10 @@ function Sync(method, model, opts) {
 			}
 			q.push('?');
 		}
+		// Last Modified logic
+		// 
 		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
-			values[_.indexOf(names, lastModifiedColumn)] = moment().format('YYYY-MM-DD HH:mm:ss');
+			values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
 		}
 
 		// Assemble create query
@@ -693,7 +708,7 @@ function Sync(method, model, opts) {
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
-
+		
 		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
 			var updateSQL = "UPDATE " + table + " SET " + lastModifiedColumn + " = DATETIME('NOW') WHERE " + model.idAttribute + "=?";
 			db.execute(updateSQL, attrObj[model.idAttribute]);

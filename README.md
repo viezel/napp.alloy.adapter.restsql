@@ -190,6 +190,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.34**
+Added support for `addModifedToUrl` and `lastModifiedDateFormat` to better control over the outcome of `Last Modified`. 
+
 **v0.1.33**
 Bugfix for special case where collection has assigned an id and hence fetch will only return a single model. 
 
