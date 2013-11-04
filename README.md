@@ -26,7 +26,11 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 				"collection_name" : "modelname",
 				"idAttribute" : "id",
 				
-				//optimise the amount of data transfer from remote server to app
+				// delete all models on fetch
+				"deleteAllOnFetch": true,
+				
+				// optimise the amount of data transfer from remote server to app
+				"addModifedToUrl": true,
 				"lastModifiedColumn": "modified"
 			},
 			
@@ -189,6 +193,9 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.35**
+Added support for deleting all models on fetch. Use `deleteAllOnFetch` in adapter config. 
 
 **v0.1.34**
 Added support for `addModifedToUrl` and `lastModifiedDateFormat` to better control over the outcome of `Last Modified`. 

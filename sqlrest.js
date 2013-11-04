@@ -1,15 +1,16 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.34
+ * @version 0.1.35
  * Copyright Napp ApS
  * www.napp.dk
  */
 
-var _ = require('alloy/underscore')._, util = require('alloy/sync/util');
-
-//until this issue is fixed: https://jira.appcelerator.org/browse/TIMOB-11752
-var Alloy = require("alloy"), Backbone = Alloy.Backbone, moment = require('alloy/moment');
+var _ = require('alloy/underscore')._, 
+	util = require('alloy/sync/util'),
+	Alloy = require("alloy"), 
+	Backbone = Alloy.Backbone, 
+	moment = require('alloy/moment');
 
 // The database name used when none is specified in the
 // model configuration.
@@ -199,7 +200,8 @@ function apiCall(_options, _callback) {
 function Sync(method, model, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
 	model.idAttribute = model.config.adapter.idAttribute;
-	//fix for collection
+	
+	// fix for collection
 	var DEBUG = model.config.debug;
 	
 	// last modified 
@@ -210,8 +212,11 @@ function Sync(method, model, opts) {
 	var parentNode = model.config.parentNode;
 	var useStrictValidation = model.config.useStrictValidation;
 	var initFetchWithLocalData = model.config.initFetchWithLocalData;
+	var deleteAllOnFetch = model.config.deleteAllOnFetch;
+	
 	var isCollection = ( model instanceof Backbone.Collection) ? true : false;
 	var returnErrorResponse = model.config.returnErrorResponse;
+	
 	
 	var singleModelRequest = null;
 	if (lastModifiedColumn) {
@@ -365,6 +370,11 @@ function Sync(method, model, opts) {
 
 			apiCall(params, function(_response) {
 				if (_response.success) {
+					if(deleteAllOnFetch){
+						deleteAllSQL();
+					}
+					
+					
 					var data = parseJSON(_response, parentNode);
 					if (_.isUndefined(params.localOnly)) {
 						//we dont want to manipulate the data on localOnly requests
@@ -728,6 +738,13 @@ function Sync(method, model, opts) {
 
 		model.id = null;
 		return model.toJSON();
+	}
+	
+	function deleteAllSQL(){
+		var sql = 'DELETE FROM ' + table;
+		db = Ti.Database.open(dbName);
+		db.execute(sql);
+		db.close();
 	}
 
 	function sqlCurrentModels() {
