@@ -26,9 +26,6 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 				"collection_name" : "modelname",
 				"idAttribute" : "id",
 				
-				// delete all models on fetch
-				"deleteAllOnFetch": true,
-				
 				// optimise the amount of data transfer from remote server to app
 				"addModifedToUrl": true,
 				"lastModifiedColumn": "modified"
@@ -38,7 +35,10 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 			"headers": { //your custom headers
 	            "Accept": "application/vnd.stackmob+json; version=0",
 		        "X-StackMob-API-Key": "your-stackmob-key"
-	        }
+	        },
+	        
+	        // delete all models on fetch
+			"deleteAllOnFetch": true
 		},
 		extendModel : function(Model) {
 			_.extend(Model.prototype, {});
