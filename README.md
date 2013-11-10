@@ -194,6 +194,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.36**
+Bugfix for building the sql statement. If orderby, likeor and limit was used at the same time, the query was incorrect. This has been fixed. 
+
 **v0.1.35**
 Added support for deleting all models on fetch. Use `deleteAllOnFetch` in adapter config. 
 

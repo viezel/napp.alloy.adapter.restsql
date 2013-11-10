@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.35
+ * @version 0.1.36
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -373,7 +373,6 @@ function Sync(method, model, opts) {
 					if(deleteAllOnFetch){
 						deleteAllSQL();
 					}
-					
 					
 					var data = parseJSON(_response, parentNode);
 					if (_.isUndefined(params.localOnly)) {
@@ -865,6 +864,45 @@ function _buildQuery(table, opts) {
 	} else {
 		sql += ' WHERE 1=1';
 	}
+	
+	if (opts.like) {
+		var like;
+		if ( typeof opts.like === 'object') {
+			like = [];
+			_.each(opts.like, function(value, f) {
+				like.push(f + ' LIKE "%' + value + '%"');
+			});
+			like = like.join(' AND ');
+			sql += ' AND ' + like;
+		}
+	}
+	
+	if (opts.likeor) {
+		var likeor;
+		if ( typeof opts.likeor === 'object') {
+			likeor = [];
+			_.each(opts.likeor, function(value, f) {
+				likeor.push(f + ' LIKE "%' + value + '%"');
+			});
+			likeor = likeor.join(' OR ');
+			sql += ' AND ' + likeor;
+		}
+	}
+	
+	if (opts.union) {
+		sql += ' UNION ' + _buildQuery(opts.union);
+	}
+	if (opts.unionAll) {
+		sql += ' UNION ALL ' + _buildQuery(opts.unionAll);
+	}
+	if (opts.intersect) {
+		sql += ' INTERSECT ' + _buildQuery(opts.intersect);
+	}
+	if (opts.except) {
+		sql += ' EXCEPT ' + _buildQuery(opts.EXCEPT);
+	}
+	
+	// order by and limit should be in the end of the statement
 	if (opts.orderBy) {
 		var order;
 		if (_.isArray(opts.orderBy)) {
@@ -881,40 +919,7 @@ function _buildQuery(table, opts) {
 			sql += ' OFFSET ' + opts.offset;
 		}
 	}
-	if (opts.union) {
-		sql += ' UNION ' + _buildQuery(opts.union);
-	}
-	if (opts.unionAll) {
-		sql += ' UNION ALL ' + _buildQuery(opts.unionAll);
-	}
-	if (opts.intersect) {
-		sql += ' INTERSECT ' + _buildQuery(opts.intersect);
-	}
-	if (opts.except) {
-		sql += ' EXCEPT ' + _buildQuery(opts.EXCEPT);
-	}
-	if (opts.like) {
-		var like;
-		if ( typeof opts.like === 'object') {
-			like = [];
-			_.each(opts.like, function(value, f) {
-				like.push(f + ' LIKE "%' + value + '%"');
-			});
-			like = like.join(' AND ');
-			sql += ' AND ' + like;
-		}
-	}
-	if (opts.likeor) {
-		var likeor;
-		if ( typeof opts.likeor === 'object') {
-			likeor = [];
-			_.each(opts.likeor, function(value, f) {
-				likeor.push(f + ' LIKE "%' + value + '%"');
-			});
-			likeor = likeor.join(' OR ');
-			sql += ' AND ' + likeor;
-		}
-	}
+	
 
 	return sql;
 }
