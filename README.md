@@ -194,19 +194,22 @@ collection.fetch({
 
 ## Changelog
 
-**v0.1.36**
+**v0.1.37**  
+Updated to use Alloy 1.3.0. 
+
+**v0.1.36**  
 Bugfix for building the sql statement. If orderby, likeor and limit was used at the same time, the query was incorrect. This has been fixed. 
 
-**v0.1.35**
+**v0.1.35**  
 Added support for deleting all models on fetch. Use `deleteAllOnFetch` in adapter config. 
 
-**v0.1.34**
+**v0.1.34**  
 Added support for `addModifedToUrl` and `lastModifiedDateFormat` to better control over the outcome of `Last Modified`. 
 
-**v0.1.33**
+**v0.1.33**  
 Bugfix for special case where collection has assigned an id and hence fetch will only return a single model. 
 
-**v0.1.32**
+**v0.1.32**  
 Added `returnErrorResponse` enables the developer to get the error response object from the remote server. 
 
 **v0.1.31**  

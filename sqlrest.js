@@ -1,13 +1,12 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.36
+ * @version 0.1.37
  * Copyright Napp ApS
  * www.napp.dk
  */
 
 var _ = require('alloy/underscore')._, 
-	util = require('alloy/sync/util'),
 	Alloy = require("alloy"), 
 	Backbone = Alloy.Backbone, 
 	moment = require('alloy/moment');
@@ -102,7 +101,7 @@ function Migrator(config, transactionDb) {
 		}
 		if (!found && this.idAttribute === ALLOY_ID_DEFAULT) {
 			columns.push(this.idAttribute);
-			values.push(util.guid());
+			values.push(guid());
 			qs.push("?");
 		}
 		this.db.execute("INSERT INTO " + this.table + " (" + columns.join(",") + ") VALUES (" + qs.join(",") + ");", values);
@@ -531,7 +530,7 @@ function Sync(method, model, opts) {
 		if (!attrObj[model.idAttribute]) {
 			if (model.idAttribute === ALLOY_ID_DEFAULT) {
 				// alloy-created GUID field
-				attrObj.id = util.guid();
+				attrObj.id = guid();
 				attrObj[model.idAttribute] = attrObj.id;
 			} else {
 				// idAttribute not assigned by alloy. Leave it empty and
@@ -1160,5 +1159,13 @@ module.exports.afterModelCreate = function(Model, name) {
 
 	return Model;
 };
+
+function S4() {
+	return ((1 + Math.random()) * 65536 | 0).toString(16).substring(1);
+}
+
+function guid() {
+	return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
+}
 
 module.exports.sync = Sync;
