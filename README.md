@@ -194,6 +194,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.38**  
+Small bugfix for model.idAttribute in sql where statements
+
 **v0.1.37**  
 Updated to use Alloy 1.3.0. 
 

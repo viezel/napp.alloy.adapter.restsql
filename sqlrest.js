@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.37
+ * @version 0.1.38
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -198,7 +198,7 @@ function apiCall(_options, _callback) {
 
 function Sync(method, model, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
-	model.idAttribute = model.config.adapter.idAttribute;
+	model.idAttribute = model.config.adapter.idAttribute || "id";
 	
 	// fix for collection
 	var DEBUG = model.config.debug;
@@ -609,7 +609,7 @@ function Sync(method, model, opts) {
 
 			if (_.isEmpty(data)) {
 				// No result
-				opts.sql.where.id = "1=2";
+				ops.sql.where[model.idAttribute] = "1=2";
 			} else {
 				// Find all idAttribute in the server response
 				var ids = [];
@@ -617,7 +617,7 @@ function Sync(method, model, opts) {
 					ids.push(element[model.idAttribute]);
 				});
 				// this will select IDs in the sql query
-				opts.sql.where.id = ids;
+				ops.sql.where[model.idAttribute] = ids;
 			}
 		}
 
