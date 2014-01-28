@@ -812,16 +812,19 @@ function Sync(method, model, opts) {
 /////////////////////////////////////////////
 
 function encodeData(obj, url) {
-	var str = [];
-	for (var p in obj) {
-		str.push(Ti.Network.encodeURIComponent(p) + "=" + Ti.Network.encodeURIComponent(obj[p]));
-	}
-
-	if (_.indexOf(url, "?") == -1) {
-		return url + "?" + str.join("&");
-	} else {
-		return url + "&" + str.join("&");
-	}
+    var _serialize = function(obj, prefix) {
+      	var str = [];
+        for (var p in obj) {
+            if (obj.hasOwnProperty(p)) {
+                var k = prefix ? prefix + "[" + p + "]" : p,
+                    v = obj[p];
+                str.push(typeof v === "object" ? _serialize(v, k) : Ti.Network.encodeURIComponent(k) + "=" + Ti.Network.encodeURIComponent(v));
+            }
+        }
+        return str.join("&");
+    };
+    
+    return url + (_.indexOf(url, "?") === -1 ? "?": "&") + _serialize(obj);
 }
 
 function _valueType(value) {
