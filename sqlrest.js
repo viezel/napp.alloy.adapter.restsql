@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.38
+ * @version 0.1.39
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -144,7 +144,7 @@ function apiCall(_options, _callback) {
 			}
 			_callback({
 				success : success,
-				status : success ? (xhr.status == 200 ? "ok" : xhr.status) : 'error',
+				status : success ? (xhr.status < 300 ? "ok" : xhr.status) : 'error',
 				code : xhr.status,
 				data: error,
 				responseText : xhr.responseText || null,
@@ -369,7 +369,7 @@ function Sync(method, model, opts) {
 
 			apiCall(params, function(_response) {
 				if (_response.success) {
-					if(deleteAllOnFetch){
+					if(deleteAllOnFetch || params.deleteAllOnFetch){
 						deleteAllSQL();
 					}
 					

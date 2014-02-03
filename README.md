@@ -7,6 +7,19 @@ SQL & RestAPI Sync Adapter for Titanium Alloy Framework.
 The idea is to combine Restful API with a local sql database. 
 
 
+### Response Codes
+
+The adapter has been desinged with the following structure.
+
+* **200:** The request was successful.
+* **201:** The resource was successfully created.
+* **204:** The request was successful, but we did not send any content back.
+* **400:** The request failed due to an application error, such as a validation error.
+* **401:** An API key was either not sent or invalid.
+* **403:** The resource does not belong to the authenticated user and is forbidden.
+* **404:** The resource was not found.
+* **500:** A server error occurred.
+
 ## How To Use
 
 Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
@@ -193,6 +206,10 @@ collection.fetch({
 ```
 
 ## Changelog
+
+**v0.1.39**  
+Added support for HTTP response code 201, 204 as success.  
+`deleteAllOnFetch` now also work on fetch params. 
 
 **v0.1.38**  
 Small bugfix for model.idAttribute in sql where statements
