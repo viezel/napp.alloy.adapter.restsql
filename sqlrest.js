@@ -1151,7 +1151,9 @@ module.exports.afterModelCreate = function(Model, name) {
 function logger(DEBUG, message, data) {
 	if (DEBUG) {
 		Ti.API.debug("[REST API] " + message);
-		Ti.API.debug(typeof data === 'object' ? JSON.stringify(data, null, '\t') : data);
+		if (data) {
+			Ti.API.debug(typeof data === 'object' ? JSON.stringify(data, null, '\t') : data);
+		}
 	}
 }
 
