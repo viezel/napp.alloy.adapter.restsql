@@ -207,6 +207,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.40**  
+Moved the DEBUG calls to a Logger Helper following the same approach as the RestAPI Adapter.
+
 **v0.1.39**  
 Added support for HTTP response code 201, 204 as success.  
 `deleteAllOnFetch` now also work on fetch params. 

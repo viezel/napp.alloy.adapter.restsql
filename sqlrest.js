@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.39
+ * @version 0.1.40
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -264,9 +264,9 @@ function Sync(method, model, opts) {
 		try {
 			lastModifiedValue = sqlLastModifiedItem();
 		} catch(e) {
-			if (DEBUG) {
-				Ti.API.debug("[SQL REST API] LASTMOD SQL FAILED: ");
-			}
+
+			logger(DEBUG, "LASTMOD SQL FAILED: ");
+
 		}
 		params.headers['Last-Modified'] = lastModifiedValue;
 	}
@@ -296,18 +296,14 @@ function Sync(method, model, opts) {
 	//json data transfers
 	params.headers['Content-Type'] = 'application/json';
 
-	if (DEBUG) {
-		Ti.API.debug("[SQL REST API] REST METHOD: " + method);
-	}
+	logger(DEBUG, "REST METHOD: " + method);
 
 	switch (method) {
 		case 'create':
 			// convert to string for API call
 			params.data = JSON.stringify(model.toJSON());
-			if (DEBUG) {
-				Ti.API.info("[SQL REST API] options: ");
-				Ti.API.info(params);
-			}
+			logger(DEBUG, "create options", params);
+
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = parseJSON(_response, parentNode);
@@ -353,10 +349,7 @@ function Sync(method, model, opts) {
 				params.url = encodeData(obj, params.url);
 			}
 
-			if (DEBUG) {
-				Ti.API.info("[SQL REST API] options: ");
-				Ti.API.info(params);
-			}
+			logger(DEBUG, "read options", params);
 
 			if (!params.localOnly && (params.initFetchWithLocalData || initFetchWithLocalData)) {
 				// read local data before receiving server data
@@ -417,10 +410,8 @@ function Sync(method, model, opts) {
 			}
 
 			params.data = JSON.stringify(model.toJSON());
-			if (DEBUG) {
-				Ti.API.info("[SQL REST API] options: ");
-				Ti.API.info(params);
-			}
+			logger(DEBUG, "update options", params);
+
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = parseJSON(_response, parentNode);
@@ -446,11 +437,8 @@ function Sync(method, model, opts) {
 				return;
 			}
 			params.url = params.url + '/' + model.id;
+			logger(DEBUG, "delete options", params);
 
-			if (DEBUG) {
-				Ti.API.info("[SQL REST API] options: ");
-				Ti.API.info(params);
-			}
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = parseJSON(_response, parentNode);
@@ -511,11 +499,7 @@ function Sync(method, model, opts) {
 
 	function createSQL(data) {
 		var attrObj = {};
-
-		if (DEBUG) {
-			Ti.API.debug("[SQL REST API] createSQL data:");
-			Ti.API.debug(data);
-		}
+		logger(DEBUG, "createSQL data:", data);
 
 		if (data) {
 			attrObj = data;
@@ -633,9 +617,8 @@ function Sync(method, model, opts) {
 				_.extend(opts.sql.where, opts.data);
 			}
 			var sql = _buildQuery(table, opts.sql || opts);
-			if (DEBUG) {
-				Ti.API.debug("[SQL REST API] SQL QUERY: " + sql);
-			}
+			logger(DEBUG, "SQL QUERY: " + sql);
+			
 			var rs = db.execute(sql);
 		}
 		var len = 0;
@@ -670,18 +653,16 @@ function Sync(method, model, opts) {
 		// shape response based on whether it's a model or collection
 		model.length = len;
 
-		if (DEBUG) {
-			Ti.API.debug("readSQL length: " + len);
-		}
+		logger(DEBUG, "readSQL length: " + len);
+
 		return len === 1 ? resp = values[0] : resp = values;
 	}
 
 	function updateSQL(data) {
 		var attrObj = {};
-		if (DEBUG) {
-			Ti.API.debug("updateSQL data:");
-			Ti.API.debug(data);
-		}
+
+		logger(DEBUG, "updateSQL data: ", data);
+
 		if (data) {
 			attrObj = data;
 		} else {
@@ -709,10 +690,10 @@ function Sync(method, model, opts) {
 		// compose the update query
 		var sql = 'UPDATE ' + table + ' SET ' + names.join(',') + ' WHERE ' + model.idAttribute + '=?';
 		values.push(attrObj[model.idAttribute]);
-		if (DEBUG) {
-			Ti.API.debug("updateSQL sql: " + sql);
-			Ti.API.debug(values);
-		}
+
+		logger(DEBUG, "updateSQL sql query: " + sql);
+		logger(DEBUG, "updateSQL values: ", values);
+
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
@@ -798,10 +779,9 @@ function Sync(method, model, opts) {
 		if (!_.isUndefined(parentNode)) {
 			data = _.isFunction(parentNode) ? parentNode(data) : traverseProperties(data, parentNode);
 		}
-		if (DEBUG) {
-			Ti.API.info("[SQL REST API] server response: ");
-			Ti.API.debug(data);
-		}
+
+		logger(DEBUG, "server response: ", data);
+
 		return data;
 	}
 
@@ -1162,6 +1142,20 @@ module.exports.afterModelCreate = function(Model, name) {
 
 	return Model;
 };
+
+
+/////////////////////////////////////////////
+// HELPERS
+/////////////////////////////////////////////
+
+function logger(DEBUG, message, data) {
+	if (DEBUG) {
+		Ti.API.debug("[REST API] " + message);
+		if (data) {
+			Ti.API.debug(typeof data === 'object' ? JSON.stringify(data, null, '\t') : data);
+		}
+	}
+}
 
 function S4() {
 	return ((1 + Math.random()) * 65536 | 0).toString(16).substring(1);
