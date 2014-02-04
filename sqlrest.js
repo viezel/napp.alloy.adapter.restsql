@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.39
+ * @version 0.1.40
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -296,7 +296,7 @@ function Sync(method, model, opts) {
 	//json data transfers
 	params.headers['Content-Type'] = 'application/json';
 
-	logger(DEBUG, "REST METHOD: ", method);
+	logger(DEBUG, "REST METHOD: " + method);
 
 	switch (method) {
 		case 'create':
