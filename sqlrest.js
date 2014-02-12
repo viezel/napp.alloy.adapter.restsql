@@ -593,7 +593,7 @@ function Sync(method, model, opts) {
 
 			if (_.isEmpty(data)) {
 				// No result
-				ops.sql.where[model.idAttribute] = "1=2";
+				opts.sql.where[model.idAttribute] = "1=2";
 			} else {
 				// Find all idAttribute in the server response
 				var ids = [];
@@ -601,7 +601,7 @@ function Sync(method, model, opts) {
 					ids.push(element[model.idAttribute]);
 				});
 				// this will select IDs in the sql query
-				ops.sql.where[model.idAttribute] = ids;
+				opts.sql.where[model.idAttribute] = ids;
 			}
 		}
 
