@@ -207,6 +207,9 @@ collection.fetch({
 
 ## Changelog
 
+**v0.1.41**
+Fixed misspelling of variable in `readSQL` that would result in crash when using the `search` parameter.
+
 **v0.1.40**  
 Moved the DEBUG calls to a Logger Helper following the same approach as the RestAPI Adapter.
 
