@@ -207,7 +207,7 @@ collection.fetch({
 
 ## Changelog
 
-**v0.1.41**
+**v0.1.41**  
 Fixed misspelling of variable in `readSQL` that would result in crash when using the `search` parameter.
 
 **v0.1.40**  
