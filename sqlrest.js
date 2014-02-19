@@ -830,7 +830,7 @@ function _buildQuery(table, opts) {
 
 	sql += ' FROM ' + table;
 
-	if (opts.where) {
+	if (opts.where && !_.isEmpty(opts.where)) {
 		var where;
 		if (_.isArray(opts.where)) {
 			where = opts.where.join(' AND ');
