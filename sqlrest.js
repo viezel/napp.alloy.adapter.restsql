@@ -1,15 +1,12 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.41
+ * @version 0.1.42
  * Copyright Napp ApS
  * www.napp.dk
  */
 
-var _ = require('alloy/underscore')._, 
-	Alloy = require("alloy"), 
-	Backbone = Alloy.Backbone, 
-	moment = require('alloy/moment');
+var _ = require('alloy/underscore')._, Alloy = require("alloy"), Backbone = Alloy.Backbone, moment = require('alloy/moment');
 
 // The database name used when none is specified in the
 // model configuration.
@@ -132,7 +129,7 @@ function apiCall(_options, _callback) {
 
 		xhr.onload = function() {
 			var responseJSON, success = true, error;
-			
+
 			// parse JSON
 			try {
 				responseJSON = JSON.parse(xhr.responseText);
@@ -146,10 +143,12 @@ function apiCall(_options, _callback) {
 				success : success,
 				status : success ? (xhr.status < 300 ? "ok" : xhr.status) : 'error',
 				code : xhr.status,
-				data: error,
+				data : error,
 				responseText : xhr.responseText || null,
 				responseJSON : responseJSON || null
 			});
+
+			cleanup();
 		};
 
 		//Handle error
@@ -165,17 +164,19 @@ function apiCall(_options, _callback) {
 				success : false,
 				status : "error",
 				code : xhr.status,
-				error: err.error,
+				error : err.error,
 				data : error,
 				responseText : xhr.responseText,
 				responseJSON : responseJSON || null
 			});
-			
+
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 			Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
 			Ti.API.error('[SQL REST API] apiCall ERROR MSG: ' + err.error);
+
+			cleanup();
 		};
-		
+
 		// headers
 		for (var header in _options.headers) {
 			xhr.setRequestHeader(header, _options.headers[header]);
@@ -184,7 +185,7 @@ function apiCall(_options, _callback) {
 		if (_options.beforeSend) {
 			_options.beforeSend(xhr);
 		}
-		
+
 		xhr.send(_options.data || null);
 	} else {
 		//we are offline
@@ -194,29 +195,40 @@ function apiCall(_options, _callback) {
 			offline : true
 		});
 	}
+
+	/**
+	 * Clean up the request
+	 */
+	function cleanup() {
+		xhr = null;
+		_options = null;
+		_callback = null;
+		error = null;
+		responseJSON = null;
+	}
+
 }
 
 function Sync(method, model, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
 	model.idAttribute = model.config.adapter.idAttribute || "id";
-	
+
 	// fix for collection
 	var DEBUG = model.config.debug;
-	
-	// last modified 
+
+	// last modified
 	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
 	var addModifedToUrl = model.config.adapter.addModifedToUrl;
 	var lastModifiedDateFormat = model.config.adapter.lastModifiedDateFormat;
-	
+
 	var parentNode = model.config.parentNode;
 	var useStrictValidation = model.config.useStrictValidation;
 	var initFetchWithLocalData = model.config.initFetchWithLocalData;
 	var deleteAllOnFetch = model.config.deleteAllOnFetch;
-	
+
 	var isCollection = ( model instanceof Backbone.Collection) ? true : false;
 	var returnErrorResponse = model.config.returnErrorResponse;
-	
-	
+
 	var singleModelRequest = null;
 	if (lastModifiedColumn) {
 		if (opts.sql && opts.sql.where) {
@@ -257,7 +269,7 @@ function Sync(method, model, opts) {
 			return;
 		}
 	}
-	
+
 	if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
 		//send last modified model datestamp to the remote server
 		var lastModifiedValue = "";
@@ -315,7 +327,7 @@ function Sync(method, model, opts) {
 					resp = saveData();
 					if (_.isUndefined(_response.offline)) {
 						// error
-						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -324,7 +336,7 @@ function Sync(method, model, opts) {
 			});
 			break;
 		case 'read':
-		
+
 			if (!isCollection && model.id) {
 				// find model by id
 				params.url = params.url + '/' + model.id;
@@ -340,7 +352,7 @@ function Sync(method, model, opts) {
 				// build url with parameters
 				params.url = encodeData(params.urlparams, params.url);
 			}
-			
+
 			// check is all the necessary info is in place for last modified
 			if (lastModifiedColumn && addModifedToUrl && lastModifiedValue) {
 				// add last modified date to url
@@ -362,10 +374,10 @@ function Sync(method, model, opts) {
 
 			apiCall(params, function(_response) {
 				if (_response.success) {
-					if(deleteAllOnFetch || params.deleteAllOnFetch){
+					if (deleteAllOnFetch || params.deleteAllOnFetch) {
 						deleteAllSQL();
 					}
-					
+
 					var data = parseJSON(_response, parentNode);
 					if (_.isUndefined(params.localOnly)) {
 						//we dont want to manipulate the data on localOnly requests
@@ -379,7 +391,7 @@ function Sync(method, model, opts) {
 					resp = readSQL();
 					if (_.isUndefined(_response.offline)) {
 						//error
-						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -422,7 +434,7 @@ function Sync(method, model, opts) {
 					resp = saveData();
 					if (_.isUndefined(_response.offline)) {
 						//error
-						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -448,7 +460,7 @@ function Sync(method, model, opts) {
 					resp = deleteSQL();
 					if (_.isUndefined(_response.offline)) {
 						//error
-						_.isFunction(params.error) && params.error(returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -549,7 +561,7 @@ function Sync(method, model, opts) {
 			q.push('?');
 		}
 		// Last Modified logic
-		// 
+		//
 		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
 			values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
 		}
@@ -618,7 +630,7 @@ function Sync(method, model, opts) {
 			}
 			var sql = _buildQuery(table, opts.sql || opts);
 			logger(DEBUG, "SQL QUERY: " + sql);
-			
+
 			var rs = db.execute(sql);
 		}
 		var len = 0;
@@ -697,7 +709,7 @@ function Sync(method, model, opts) {
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
-		
+
 		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
 			var updateSQL = "UPDATE " + table + " SET " + lastModifiedColumn + " = DATETIME('NOW') WHERE " + model.idAttribute + "=?";
 			db.execute(updateSQL, attrObj[model.idAttribute]);
@@ -718,8 +730,8 @@ function Sync(method, model, opts) {
 		model.id = null;
 		return model.toJSON();
 	}
-	
-	function deleteAllSQL(){
+
+	function deleteAllSQL() {
 		var sql = 'DELETE FROM ' + table;
 		db = Ti.Database.open(dbName);
 		db.execute(sql);
@@ -775,7 +787,8 @@ function Sync(method, model, opts) {
 	}
 
 	function parseJSON(_response, parentNode) {
-		var data = _response.responseJSON; //JSON.parse(_response.responseText);
+		var data = _response.responseJSON;
+		//JSON.parse(_response.responseText);
 		if (!_.isUndefined(parentNode)) {
 			data = _.isFunction(parentNode) ? parentNode(data) : traverseProperties(data, parentNode);
 		}
@@ -792,19 +805,18 @@ function Sync(method, model, opts) {
 /////////////////////////////////////////////
 
 function encodeData(obj, url) {
-    var _serialize = function(obj, prefix) {
-      	var str = [];
-        for (var p in obj) {
-            if (obj.hasOwnProperty(p)) {
-                var k = prefix ? prefix + "[" + p + "]" : p,
-                    v = obj[p];
-                str.push(typeof v === "object" ? _serialize(v, k) : Ti.Network.encodeURIComponent(k) + "=" + Ti.Network.encodeURIComponent(v));
-            }
-        }
-        return str.join("&");
-    };
-    
-    return url + (_.indexOf(url, "?") === -1 ? "?": "&") + _serialize(obj);
+	var _serialize = function(obj, prefix) {
+		var str = [];
+		for (var p in obj) {
+			if (obj.hasOwnProperty(p)) {
+				var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
+				str.push( typeof v === "object" ? _serialize(v, k) : Ti.Network.encodeURIComponent(k) + "=" + Ti.Network.encodeURIComponent(v));
+			}
+		}
+		return str.join("&");
+	};
+
+	return url + (_.indexOf(url, "?") === -1 ? "?" : "&") + _serialize(obj);
 }
 
 function _valueType(value) {
@@ -846,7 +858,7 @@ function _buildQuery(table, opts) {
 	} else {
 		sql += ' WHERE 1=1';
 	}
-	
+
 	if (opts.like) {
 		var like;
 		if ( typeof opts.like === 'object') {
@@ -858,7 +870,7 @@ function _buildQuery(table, opts) {
 			sql += ' AND ' + like;
 		}
 	}
-	
+
 	if (opts.likeor) {
 		var likeor;
 		if ( typeof opts.likeor === 'object') {
@@ -870,7 +882,7 @@ function _buildQuery(table, opts) {
 			sql += ' AND ' + likeor;
 		}
 	}
-	
+
 	if (opts.union) {
 		sql += ' UNION ' + _buildQuery(opts.union);
 	}
@@ -883,7 +895,7 @@ function _buildQuery(table, opts) {
 	if (opts.except) {
 		sql += ' EXCEPT ' + _buildQuery(opts.EXCEPT);
 	}
-	
+
 	// order by and limit should be in the end of the statement
 	if (opts.orderBy) {
 		var order;
@@ -901,7 +913,6 @@ function _buildQuery(table, opts) {
 			sql += ' OFFSET ' + opts.offset;
 		}
 	}
-	
 
 	return sql;
 }
@@ -1143,7 +1154,6 @@ module.exports.afterModelCreate = function(Model, name) {
 	return Model;
 };
 
-
 /////////////////////////////////////////////
 // HELPERS
 /////////////////////////////////////////////
@@ -1152,7 +1162,7 @@ function logger(DEBUG, message, data) {
 	if (DEBUG) {
 		Ti.API.debug("[REST API] " + message);
 		if (data) {
-			Ti.API.debug(typeof data === 'object' ? JSON.stringify(data, null, '\t') : data);
+			Ti.API.debug( typeof data === 'object' ? JSON.stringify(data, null, '\t') : data);
 		}
 	}
 }
@@ -1165,4 +1175,4 @@ function guid() {
 	return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
 }
 
-module.exports.sync = Sync;
+module.exports.sync = Sync; 
