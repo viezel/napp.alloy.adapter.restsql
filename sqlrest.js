@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.42
+ * @version 0.1.43
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -213,20 +213,30 @@ function Sync(method, model, opts) {
 	var table = model.config.adapter.collection_name, columns = model.config.columns, dbName = model.config.adapter.db_name || ALLOY_DB_DEFAULT, resp = null, db;
 	model.idAttribute = model.config.adapter.idAttribute || "id";
 
-	// fix for collection
+	
 	var DEBUG = model.config.debug;
 
 	// last modified
 	var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
 	var addModifedToUrl = model.config.adapter.addModifedToUrl;
 	var lastModifiedDateFormat = model.config.adapter.lastModifiedDateFormat;
-
+	
+	// Used for custom parsing of the response data
 	var parentNode = model.config.parentNode;
+	
+	// Validate the response data and only allow those items with all columns defined in the object to be saved to the database.
 	var useStrictValidation = model.config.useStrictValidation;
+	
+	// before fethcing data from remote server - the adapter will return the stored data if enabled
 	var initFetchWithLocalData = model.config.initFetchWithLocalData;
+	
+	// if enabled - it will delete all the rows in the table on a succesful fetch
 	var deleteAllOnFetch = model.config.deleteAllOnFetch;
-
+	
+	// Are we dealing with a colleciton or a model?
 	var isCollection = ( model instanceof Backbone.Collection) ? true : false;
+	
+	// returns the error response instead of the local data
 	var returnErrorResponse = model.config.returnErrorResponse;
 
 	var singleModelRequest = null;
@@ -560,8 +570,8 @@ function Sync(method, model, opts) {
 			}
 			q.push('?');
 		}
+		
 		// Last Modified logic
-		//
 		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
 			values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
 		}
@@ -595,6 +605,7 @@ function Sync(method, model, opts) {
 	function readSQL(data) {
 		if (DEBUG) {
 			Ti.API.debug("[SQL REST API] readSQL");
+			logger(DEBUG, "\n******************************\nCollection total BEFORE read from db: " + model.length+ " models\n******************************");
 		}
 		var sql = opts.query || 'SELECT * FROM ' + table;
 
@@ -620,22 +631,24 @@ function Sync(method, model, opts) {
 		// execute the select query
 		db = Ti.Database.open(dbName);
 
+		// run a specific sql query if defined
 		if (opts.query) {
 			var rs = db.execute(opts.query.sql, opts.query.params);
 		} else {
-			if (opts.data) {//extend sql where with data
+			//extend sql where with data
+			if (opts.data) {
 				opts.sql = opts.sql || {};
 				opts.sql.where = opts.sql.where || {};
 				_.extend(opts.sql.where, opts.data);
 			}
+			// build the sql query
 			var sql = _buildQuery(table, opts.sql || opts);
 			logger(DEBUG, "SQL QUERY: " + sql);
 
 			var rs = db.execute(sql);
 		}
-		var len = 0;
-		var values = [];
-
+		var len = 0, values = [];
+		
 		// iterate through all queried rows
 		while (rs.isValidRow()) {
 			var o = {};
@@ -649,7 +662,10 @@ function Sync(method, model, opts) {
 				o[fn] = rs.fieldByName(fn);
 			});
 			values.push(o);
-			if (isCollection) {
+			
+			// Only push models if its a collection
+			// and not if we are using fetch({add:true})
+			if (isCollection && !params.add) {
 				//push the models
 				var m = new model.config.Model(o);
 				model.models.push(m);
@@ -665,9 +681,9 @@ function Sync(method, model, opts) {
 		// shape response based on whether it's a model or collection
 		model.length = len;
 
-		logger(DEBUG, "readSQL length: " + len);
-
-		return len === 1 ? resp = values[0] : resp = values;
+		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
+		resp = len === 1 ? values[0] : values;
+		return resp;
 	}
 
 	function updateSQL(data) {
@@ -698,23 +714,22 @@ function Sync(method, model, opts) {
 				q.push('?');
 			}
 		}
-
+		
+		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
+			values[_.indexOf(names, lastModifiedColumn+"=?")] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
+		}
+		
 		// compose the update query
 		var sql = 'UPDATE ' + table + ' SET ' + names.join(',') + ' WHERE ' + model.idAttribute + '=?';
 		values.push(attrObj[model.idAttribute]);
-
+		
 		logger(DEBUG, "updateSQL sql query: " + sql);
 		logger(DEBUG, "updateSQL values: ", values);
 
 		// execute the update
 		db = Ti.Database.open(dbName);
 		db.execute(sql, values);
-
-		if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
-			var updateSQL = "UPDATE " + table + " SET " + lastModifiedColumn + " = DATETIME('NOW') WHERE " + model.idAttribute + "=?";
-			db.execute(updateSQL, attrObj[model.idAttribute]);
-		}
-
+		
 		db.close();
 
 		return attrObj;

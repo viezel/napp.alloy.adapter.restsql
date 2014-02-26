@@ -138,7 +138,7 @@ parentNode: function (data) {
 ### useStrictValidation
 
 Some times its important for the app to have some certainty that the data provided by the database is valid and does not contain null data. 
-useStrictValidation runs through the fetch response data and only allows the items which have all columns in the obejct to be saved to the database.
+useStrictValidation runs through the fetch response data and only allow the items which have all columns in the object to be saved to the database.
 
 	config: {
 		...
@@ -205,7 +205,57 @@ collection.fetch({
 });
 ```
 
+
+
+## Example - Using infinite scrolling
+
+In the below example - im showing how to use this adapter with [alloy scroll widget](https://github.com/FokkeZB/nl.fokkezb.infiniteScroll) by @FokkeZB 
+
+
+```xml
+<TableView id="table">
+	<Widget id="is" src="nl.fokkezb.infiniteScroll" onEnd="infiniteCallback" />
+</TableView>
+```
+
+
+```javascript
+function infiniteCallback(e) {	
+	// get length before fetch
+	var ln = library.models.length;
+	collection..fetch({
+		// add to url params
+		// result in e.g. example.com/todo?offset=0&limit=20
+		urlparams : {
+			limit : 20, // load 20 each iteration
+			offset : ln
+		},
+
+		// Add to the collection - Don't reset it
+		add : true,
+		
+		// lets keep the fetching under the radar
+		silent : true,
+
+		// return the exact results - so exact results
+		returnExactServerResponse: true,
+		
+		// success callback
+		success : function(col) {
+			// if no new models have been added - lets call done.
+			(col.models.length === ln) ? e.done() : e.success();
+		},
+		
+		// error callback
+		error : e.error
+	});
+}
+```
+
 ## Changelog
+
+**v0.1.43**  
+Bugfix: When using `collection.fetch({add:true})` eg. infinite scrolling - the adapter added the models double, due to the structure of backbone. This is now fixed.  
 
 **v0.1.42**  
 Cleaning of HTTP objects
