@@ -401,7 +401,7 @@ function Sync(method, model, opts) {
 					}
 
 					var data = parseJSON(_response, parentNode);
-					if (_.isUndefined(params.localOnly)) {
+					if (!params.localOnly) {
 						//we dont want to manipulate the data on localOnly requests
 						saveData(data);
 					}
