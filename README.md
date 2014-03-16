@@ -172,13 +172,22 @@ Set this property to true, if you want to get the local data immediately, and ge
 
 ### returnErrorResponse
 
-Set this proerty to true if you want the error response object from the remote server. Default behaviour is not to return this, but return the data stored locally. 
+Set this property to true if you want the error response object from the remote server. Default behaviour is not to return this, but return the data stored locally. 
 
 	config: {
 		...
 		"returnErrorResponse" : true
 	}
 
+### disableSaveDataLocallyOnServerError
+
+This property is a way to control what the local sql database should do when the remote server sends back an error of some kind. It could be 401, 404, 500 etc. In these siatuations, sometimes you do not want the adapter to save the data what might be incorrect. 
+Setting this property to true will disable saving data locally when errors occur.
+
+	config: {
+		...
+		"disableSaveDataLocallyOnServerError" : true
+	}
 
 ### Extended SQL interface
 
@@ -253,6 +262,9 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+
+**v0.1.44**  
+Added support for `disableSaveDataLocallyOnServerError`
 
 **v0.1.43**  
 Bugfix: When using `collection.fetch({add:true})` eg. infinite scrolling - the adapter added the models double, due to the structure of backbone. This is now fixed.  

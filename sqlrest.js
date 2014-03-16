@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.43
+ * @version 0.1.44
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -169,10 +169,12 @@ function apiCall(_options, _callback) {
 				responseText : xhr.responseText,
 				responseJSON : responseJSON || null
 			});
-
+			
+			
 			Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
 			Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
 			Ti.API.error('[SQL REST API] apiCall ERROR MSG: ' + err.error);
+			Ti.API.error('[SQL REST API] apiCall ERROR URL: ' + _options.url);
 
 			cleanup();
 		};
@@ -232,6 +234,9 @@ function Sync(method, model, opts) {
 	
 	// if enabled - it will delete all the rows in the table on a succesful fetch
 	var deleteAllOnFetch = model.config.deleteAllOnFetch;
+	
+	// save data locally on server error?
+	var disableSaveDataLocallyOnServerError = model.config.disableSaveDataLocallyOnServerError;
 	
 	// Are we dealing with a colleciton or a model?
 	var isCollection = ( model instanceof Backbone.Collection) ? true : false;
@@ -329,12 +334,19 @@ function Sync(method, model, opts) {
 			apiCall(params, function(_response) {
 				if (_response.success) {
 					var data = parseJSON(_response, parentNode);
-					//Rest API should return a new model id.
+					// Rest API should return a new model id.
 					resp = saveData(data);
 					_.isFunction(params.success) && params.success(resp);
 				} else {
-					//offline or error
-					resp = saveData();
+					// offline or error
+					
+					// save data locally when server returned an error
+					if(params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError){
+						logger(DEBUG, "NOTICE: The data is not being saved locally");
+					} else {
+						resp = saveData();
+					}
+					
 					if (_.isUndefined(_response.offline)) {
 						// error
 						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
@@ -440,8 +452,15 @@ function Sync(method, model, opts) {
 					resp = saveData(data);
 					_.isFunction(params.success) && params.success(resp);
 				} else {
-					//error or offline - save & use local data
-					resp = saveData();
+					// error or offline - save & use local data
+					
+					// save data locally when server returned an error
+					if(params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError){
+						logger(DEBUG, "NOTICE: The data is not being saved locally");
+					} else {
+						resp = saveData();
+					}
+					
 					if (_.isUndefined(_response.offline)) {
 						//error
 						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
@@ -467,7 +486,15 @@ function Sync(method, model, opts) {
 					resp = deleteSQL();
 					_.isFunction(params.success) && params.success(resp);
 				} else {
-					resp = deleteSQL();
+					// error or offline
+					
+					// save data locally when server returned an error
+					if(params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError){
+						logger(DEBUG, "NOTICE: The data is not being saved locally");
+					} else {
+						resp = saveData();
+					}
+					
 					if (_.isUndefined(_response.offline)) {
 						//error
 						_.isFunction(params.error) && params.error( returnErrorResponse ? _response : resp);
