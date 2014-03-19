@@ -522,6 +522,10 @@ function Sync(method, model, opts) {
 			if (!_.isUndefined(data["is_deleted"])) {
 				//delete item
 				deleteSQL(data[model.idAttribute]);
+			// Doesn't exist in DB yet. No ID attribute is created until after
+			// it is saved into DB or retrieved from API
+			} else if (_.isUndefined(data[model.idAttribute])) {
+				return createSQL(data);
 			} else if (sqlFindItem(data[model.idAttribute]).length == 1) {
 				//item exists - update it
 				return updateSQL(data);
@@ -1217,4 +1221,4 @@ function guid() {
 	return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
 }
 
-module.exports.sync = Sync; 
+module.exports.sync = Sync;
