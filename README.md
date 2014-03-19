@@ -262,6 +262,9 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+**v0.1.44**  
+If you make a local query with conditions, it's not required to enter parameters.
+`collection.fetch({query:{sql:'SELECT * FROM mytable WHERE parms1 = param1'}, localOnly:true});`
 
 **v0.1.44**  
 Added support for `disableSaveDataLocallyOnServerError`
