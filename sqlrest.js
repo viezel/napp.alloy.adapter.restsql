@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.44
+ * @version 0.1.45
  * Copyright Napp ApS
  * www.napp.dk
  */
