@@ -262,7 +262,7 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
-**v0.1.44**  
+**v0.1.45**  
 If you make a local query with conditions, it's not required to enter parameters.
 `collection.fetch({query:{sql:'SELECT * FROM mytable WHERE parms1 = param1'}, localOnly:true});`
 
