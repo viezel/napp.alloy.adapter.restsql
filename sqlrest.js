@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.44
+ * @version 0.1.45
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -660,7 +660,11 @@ function Sync(method, model, opts) {
 
 		// run a specific sql query if defined
 		if (opts.query) {
-			var rs = db.execute(opts.query.sql, opts.query.params);
+			if(opts.query.params){
+				var rs = db.execute(opts.query.sql, opts.query.params);
+			} else {
+				var rs = db.execute(opts.query.sql);
+			}
 		} else {
 			//extend sql where with data
 			if (opts.data) {
