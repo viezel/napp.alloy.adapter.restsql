@@ -660,7 +660,11 @@ function Sync(method, model, opts) {
 
 		// run a specific sql query if defined
 		if (opts.query) {
-			var rs = db.execute(opts.query.sql, opts.query.params);
+			if(opts.query.params){
+				var rs = db.execute(opts.query.sql, opts.query.params);
+			} else {
+				var rs = db.execute(opts.query.sql);
+			}
 		} else {
 			//extend sql where with data
 			if (opts.data) {
