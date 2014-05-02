@@ -292,6 +292,13 @@ function Sync(method, model, opts) {
         }
     }
 
+    if(typeof model.headers === "function"){
+        var dynamic_headers = model.headers();
+        for (var header in dynamic_headers) {
+            params.headers[header] = dynamic_headers[header];
+        }
+    }
+
     // We need to ensure that we have a base url.
     if (!params.url) {
         params.url = (model.config.URL || model.url());

@@ -89,6 +89,16 @@ Define your own custom headers. E.g. to add a BaaS API
 		"Accept": "application/vnd.stackmob+json; version=0",
 		"X-StackMob-API-Key": "your-stackmob-key"
 	}
+	
+Define your own dynamic headers. E.g. adding a dynamic cookie value
+
+	"headers" : function(){
+		return {
+			"Cookie" : "access=" + someCustomHashFunction();
+		};
+	}
+
+Custom headers can be added to either the collection or the model or both.
 
 ### Nested Result Objects
 
@@ -262,6 +272,9 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+**v0.1.46**
+Added support for dynamic header values
+
 **v0.1.45**  
 If you make a local query with conditions, it's not required to enter parameters.
 `collection.fetch({query:{sql:'SELECT * FROM mytable WHERE parms1 = param1'}, localOnly:true});`
