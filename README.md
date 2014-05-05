@@ -214,6 +214,21 @@ collection.fetch({
 });
 ```
 
+### ETag
+
+This feature will only work if your server supports ETags. If you have no idea what this is, then consult your server admin.
+Start be enabling this feature in the model config, like the following:
+
+	config: {
+		...
+		"eTagEnabled" : true
+	}
+
+You do not have to do anything more. The adapter will send and recieve the ETag for every single request and store those locally in the Ti.App.Properties namespace. 
+
+The adapter uses the `IF-NONE-MATCH` header to send the newest ETag for the provided url to the server on each request. Once a succesful response is recieved by the adapter, it will store the new ETag automatically. 
+
+**Notice: This may be a good idea not to use this while developing, because it will cache and store your ETag - which might end up in wrong situations while you are working**
 
 
 ## Example - Using infinite scrolling
@@ -262,6 +277,17 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+
+**v0.2.0**  
+Added support for ETags. Great for performance. 
+Added support for HTTP headers being functions. This is useful, if you have a userToken or similar variable that change over time. 
+
+**v0.1.47**  
+Fix for delete.
+
+**v0.1.46**  
+Small bugfix
+
 **v0.1.45**  
 If you make a local query with conditions, it's not required to enter parameters.
 `collection.fetch({query:{sql:'SELECT * FROM mytable WHERE parms1 = param1'}, localOnly:true});`

@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.1.45
+ * @version 0.2.0
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -139,21 +139,29 @@ function apiCall(_options, _callback) {
         xhr.open(_options.type, _options.url);
 
         xhr.onload = function() {
-            var responseJSON, success = true,
-                error;
-
-            // parse JSON
-            try {
-                responseJSON = JSON.parse(xhr.responseText);
-            } catch (e) {
-                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + e.message);
-                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + xhr.responseText);
-                success = false;
-                error = e.message;
+            var responseJSON, success = (xhr.status <= 304) ? "ok" : "error",
+                 status = true, error;
+			
+			// save the eTag for future reference
+			if(_options.eTagEnabled && success){
+				setETag(_options.url, xhr.getResponseHeader('ETag'));
+			}
+			
+			if(xhr.status != 304){
+	            // parse JSON
+	            try {
+	                responseJSON = JSON.parse(xhr.responseText);
+	            } catch (e) {
+	                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + e.message);
+	                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + xhr.responseText);
+	                status = false;
+	                error = e.message;
+	            }
             }
+            
             _callback({
-                success: success,
-                status: success ? (xhr.status < 300 ? "ok" : xhr.status) : 'error',
+                success: status,
+                status: success,
                 code: xhr.status,
                 data: error,
                 responseText: xhr.responseText || null,
@@ -193,11 +201,17 @@ function apiCall(_options, _callback) {
 
         // headers
         for (var header in _options.headers) {
-            xhr.setRequestHeader(header, _options.headers[header]);
+        	// use value or function to return value
+            xhr.setRequestHeader(header, _.isFunction(_options.headers[header]) ? _options.headers[header]() : _options.headers[header]);
         }
 
         if (_options.beforeSend) {
             _options.beforeSend(xhr);
+        }
+        
+        if(_options.eTagEnabled) {
+        	var etag = getETag(_options.url);
+        	etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
         }
 
         xhr.send(_options.data || null);
@@ -206,7 +220,8 @@ function apiCall(_options, _callback) {
         _callback({
             success: false,
             responseText: null,
-            offline: true
+            offline: true,
+            localOnly: _options.localOnly
         });
     }
 
@@ -238,7 +253,10 @@ function Sync(method, model, opts) {
     var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
     var addModifedToUrl = model.config.adapter.addModifedToUrl;
     var lastModifiedDateFormat = model.config.adapter.lastModifiedDateFormat;
-
+	
+	// eTag enabled
+	var eTagEnabled = model.config.eTagEnabled;
+	
     // Used for custom parsing of the response data
     var parentNode = model.config.parentNode;
 
@@ -307,7 +325,6 @@ function Sync(method, model, opts) {
         try {
             lastModifiedValue = sqlLastModifiedItem();
         } catch (e) {
-
             logger(DEBUG, "LASTMOD SQL FAILED: ");
 
         }
@@ -357,7 +374,7 @@ function Sync(method, model, opts) {
                     // offline or error
 
                     // save data locally when server returned an error
-                    if (params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError) {
+                    if (!_response.localOnly && (params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError)) {
                         logger(DEBUG, "NOTICE: The data is not being saved locally");
                     } else {
                         resp = saveData();
@@ -389,6 +406,10 @@ function Sync(method, model, opts) {
             if (params.urlparams) {
                 // build url with parameters
                 params.url = encodeData(params.urlparams, params.url);
+            }
+            
+            if(eTagEnabled){
+            	params.eTagEnabled = true;
             }
 
             // check is all the necessary info is in place for last modified
@@ -471,7 +492,7 @@ function Sync(method, model, opts) {
                     // error or offline - save & use local data
 
                     // save data locally when server returned an error
-                    if (params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError) {
+                    if (!_response.localOnly && (params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError)) {
                         logger(DEBUG, "NOTICE: The data is not being saved locally");
                     } else {
                         resp = saveData();
@@ -505,10 +526,10 @@ function Sync(method, model, opts) {
                     // error or offline
 
                     // save data locally when server returned an error
-                    if (params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError) {
-                        logger(DEBUG, "NOTICE: The data is not being saved locally");
+                    if (!_response.localOnly && (params.disableSaveDataLocallyOnServerError || disableSaveDataLocallyOnServerError)) {
+                        logger(DEBUG, "NOTICE: The data is not being deleted locally");
                     } else {
-                        resp = saveData();
+                        resp = deleteSQL();
                     }
 
                     if (_.isUndefined(_response.offline)) {
@@ -1237,6 +1258,30 @@ function logger(DEBUG, message, data) {
         }
     }
 }
+
+/**
+ * Get the ETag for the given url
+ * @param {Object} url
+ */
+function getETag(url){
+	var obj = Ti.App.Properties.getObject("Napp_RESTSQL_ADATER",{});
+	var data = obj[url];
+	return data || null;
+}
+ 
+/**
+ * Set the ETag for the given url
+ * @param {Object} url
+ * @param {Object} eTag
+ */
+function setETag(url, eTag){
+	if(eTag && url){
+		var obj = Ti.App.Properties.getObject("Napp_RESTSQL_ADATER",{});
+		obj[url] = eTag;
+		Ti.App.Properties.setObject("Napp_RESTSQL_ADATER",obj);
+	}
+}
+
 
 function S4() {
     return ((1 + Math.random()) * 65536 | 0).toString(16).substring(1);
