@@ -14,6 +14,7 @@ The adapter has been desinged with the following structure.
 * **200:** The request was successful.
 * **201:** The resource was successfully created.
 * **204:** The request was successful, but we did not send any content back.
+* **304:** The request was not modified. 
 * **400:** The request failed due to an application error, such as a validation error.
 * **401:** An API key was either not sent or invalid.
 * **403:** The resource does not belong to the authenticated user and is forbidden.
@@ -192,7 +193,7 @@ Setting this property to true will disable saving data locally when errors occur
 ### Extended SQL interface
 
 You can perform a local query, and use a bunch of SQL commands without having to write the actual query. The query is also support btw.
-Use: *select, where, orderBy, limit, offset, union, unionAll, intersect, except, like, likeor*
+Use: *select, where, wherenot, orderBy, limit, offset, union, unionAll, intersect, except, like, likeor*
 
 ```javascript
 collection.fetch({  
@@ -200,8 +201,11 @@ collection.fetch({
 		language: "English"
 	},  
 	sql: {  
-		where:{  
+		where: {  
 			category_id: 2
+		},
+		wherenot: {
+			title: "Hello World"
 		},
 		orderBy:"title",
 		offset:20,
@@ -277,6 +281,11 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+
+**v0.2.1**  
+Added support for WHERE != sql statements as `wherenot` in the Extended SQL interface.   
+Added support for default urlparams in model config.  
+Better memory management.
 
 **v0.2.0**  
 Added support for ETags. Great for performance. 

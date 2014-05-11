@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.2.0
+ * @version 0.2.1
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -139,21 +139,24 @@ function apiCall(_options, _callback) {
         xhr.open(_options.type, _options.url);
 
         xhr.onload = function() {
-            var responseJSON, success = (xhr.status <= 304) ? "ok" : "error",
-                 status = true, error;
+            var responseJSON, 
+            	success = (this.status <= 304) ? "ok" : "error",
+                status = true, 
+                error;
 			
 			// save the eTag for future reference
 			if(_options.eTagEnabled && success){
 				setETag(_options.url, xhr.getResponseHeader('ETag'));
 			}
 			
-			if(xhr.status != 304){
+			// we dont want to parse the JSON on a empty response
+			if(this.status != 304 && this.status != 204){
 	            // parse JSON
 	            try {
-	                responseJSON = JSON.parse(xhr.responseText);
+	                responseJSON = JSON.parse(this.responseText);
 	            } catch (e) {
 	                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + e.message);
-	                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + xhr.responseText);
+	                Ti.API.error('[SQL REST API] apiCall PARSE ERROR: ' + this.responseText);
 	                status = false;
 	                error = e.message;
 	            }
@@ -162,9 +165,9 @@ function apiCall(_options, _callback) {
             _callback({
                 success: status,
                 status: success,
-                code: xhr.status,
+                code: this.status,
                 data: error,
-                responseText: xhr.responseText || null,
+                responseText: this.responseText || null,
                 responseJSON: responseJSON || null
             });
 
@@ -175,7 +178,7 @@ function apiCall(_options, _callback) {
         xhr.onerror = function(err) {
             var responseJSON, error;
             try {
-                responseJSON = JSON.parse(xhr.responseText);
+                responseJSON = JSON.parse(this.responseText);
             } catch (e) {
                 error = e.message;
             }
@@ -183,16 +186,15 @@ function apiCall(_options, _callback) {
             _callback({
                 success: false,
                 status: "error",
-                code: xhr.status,
+                code: this.status,
                 error: err.error,
                 data: error,
-                responseText: xhr.responseText,
+                responseText: this.responseText,
                 responseJSON: responseJSON || null
             });
 
-
-            Ti.API.error('[SQL REST API] apiCall ERROR: ' + xhr.responseText);
-            Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + xhr.status);
+            Ti.API.error('[SQL REST API] apiCall ERROR: ' + this.responseText);
+            Ti.API.error('[SQL REST API] apiCall ERROR CODE: ' + this.status);
             Ti.API.error('[SQL REST API] apiCall ERROR MSG: ' + err.error);
             Ti.API.error('[SQL REST API] apiCall ERROR URL: ' + _options.url);
 
@@ -216,7 +218,7 @@ function apiCall(_options, _callback) {
 
         xhr.send(_options.data || null);
     } else {
-        //we are offline
+        // we are offline
         _callback({
             success: false,
             responseText: null,
@@ -246,7 +248,7 @@ function Sync(method, model, opts) {
         db;
     model.idAttribute = model.config.adapter.idAttribute || "id";
 
-
+	// Debug mode
     var DEBUG = model.config.debug;
 
     // last modified
@@ -318,7 +320,8 @@ function Sync(method, model, opts) {
             return;
         }
     }
-
+	
+	// Check if Last Modified is active
     if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
         //send last modified model datestamp to the remote server
         var lastModifiedValue = "";
@@ -329,6 +332,11 @@ function Sync(method, model, opts) {
 
         }
         params.headers['Last-Modified'] = lastModifiedValue;
+    }
+    
+    // Extend the provided url params with those from the model config
+    if (_.isObject(params.urlparams) || model.config.URLPARAMS) {
+        _.extend(params.urlparams, _.isFunction(model.config.URLPARAMS) ? model.config.URLPARAMS() : model.config.URLPARAMS);
     }
 
     // For older servers, emulate JSON by encoding the request into an HTML-form.
@@ -879,13 +887,10 @@ function Sync(method, model, opts) {
 
     function parseJSON(_response, parentNode) {
         var data = _response.responseJSON;
-        //JSON.parse(_response.responseText);
         if (!_.isUndefined(parentNode)) {
             data = _.isFunction(parentNode) ? parentNode(data) : traverseProperties(data, parentNode);
         }
-
         logger(DEBUG, "server response: ", data);
-
         return data;
     }
 
@@ -934,6 +939,7 @@ function _buildQuery(table, opts) {
 
     sql += ' FROM ' + table;
 
+	// WHERE
     if (opts.where && !_.isEmpty(opts.where)) {
         var where;
         if (_.isArray(opts.where)) {
@@ -950,7 +956,25 @@ function _buildQuery(table, opts) {
     } else {
         sql += ' WHERE 1=1';
     }
+	
+	// WHERE NOT
+    if (opts.wherenot && !_.isEmpty(opts.wherenot)) {
+        var wherenot;
+        if (_.isArray(opts.wherenot)) {
+            wherenot = opts.wherenot.join(' AND ');
+        } else if (typeof opts.wherenot === 'object') {
+            wherenot = [];
+            // use the where not operator
+            wherenot = whereBuilder(wherenot, opts.wherenot, " != ");
+            wherenot = wherenot.join(' AND ');
+        } else {
+            wherenot = opts.wherenot;
+        }
 
+        sql += ' AND ' + wherenot;
+    } 
+	
+	// LIKE
     if (opts.like) {
         var like;
         if (typeof opts.like === 'object') {
@@ -962,7 +986,8 @@ function _buildQuery(table, opts) {
             sql += ' AND ' + like;
         }
     }
-
+	
+	// LIKE OR
     if (opts.likeor) {
         var likeor;
         if (typeof opts.likeor === 'object') {
@@ -974,7 +999,8 @@ function _buildQuery(table, opts) {
             sql += ' AND ' + likeor;
         }
     }
-
+    
+	// UNION
     if (opts.union) {
         sql += ' UNION ' + _buildQuery(opts.union);
     }
@@ -1009,18 +1035,20 @@ function _buildQuery(table, opts) {
     return sql;
 }
 
-function whereBuilder(where, data) {
+function whereBuilder(where, data, operator) {
+	var whereOperator = operator || " = ";
+	
     _.each(data, function(v, f) {
         if (_.isArray(v)) { //select multiple items
             var innerWhere = [];
             _.each(v, function(value) {
-                innerWhere.push(f + " = " + _valueType(value));
+                innerWhere.push(f + whereOperator + _valueType(value));
             });
             where.push(innerWhere.join(' OR '));
         } else if (_.isObject(v)) {
-            where = whereBuilder(where, v);
+            where = whereBuilder(where, v, whereOperator);
         } else {
-            where.push(f + " = " + _valueType(v));
+            where.push(f + whereOperator + _valueType(v));
         }
     });
     return where;
@@ -1264,7 +1292,7 @@ function logger(DEBUG, message, data) {
  * @param {Object} url
  */
 function getETag(url){
-	var obj = Ti.App.Properties.getObject("Napp_RESTSQL_ADATER",{});
+	var obj = Ti.App.Properties.getObject("NAPP_RESTSQL_ADAPTER",{});
 	var data = obj[url];
 	return data || null;
 }
@@ -1276,9 +1304,9 @@ function getETag(url){
  */
 function setETag(url, eTag){
 	if(eTag && url){
-		var obj = Ti.App.Properties.getObject("Napp_RESTSQL_ADATER",{});
+		var obj = Ti.App.Properties.getObject("NAPP_RESTSQL_ADAPTER",{});
 		obj[url] = eTag;
-		Ti.App.Properties.setObject("Napp_RESTSQL_ADATER",obj);
+		Ti.App.Properties.setObject("NAPP_RESTSQL_ADAPTER",obj);
 	}
 }
 
