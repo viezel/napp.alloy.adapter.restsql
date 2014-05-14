@@ -866,13 +866,22 @@ function Sync(method, model, opts) {
     }
 
     function sqlLastModifiedItem() {
+        var queryObject = {
+            select: lastModifiedColumn,
+            orderBy: lastModifiedColumn + ' DESC',
+            isNotNull: lastModifiedColumn,
+            limit: '0,1',
+            where: {}
+        };
+
+        //model
         if (singleModelRequest || !isCollection) {
-            //model
-            var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL AND ' + model.idAttribute + '=' + singleModelRequest + ' ORDER BY ' + lastModifiedColumn + ' DESC LIMIT 0,1';
-        } else {
-            //collection
-            var sql = 'SELECT ' + lastModifiedColumn + ' FROM ' + table + ' WHERE ' + lastModifiedColumn + ' IS NOT NULL ORDER BY ' + lastModifiedColumn + ' DESC LIMIT 0,1';
+            queryObject.where[model.idAttribute] = singleModelRequest;
         }
+        queryObject = _.extend({}, queryObject, _.clone(opts.sql));
+        var sql = _buildQuery(table, queryObject);
+
+        logger(DEBUG, "sqlLastModifiedItem sql query: " + sql);
 
         db = Ti.Database.open(dbName);
         rs = db.execute(sql);
@@ -999,7 +1008,14 @@ function _buildQuery(table, opts) {
             sql += ' AND ' + likeor;
         }
     }
-    
+
+    if(opts.isNull) {
+        sql += ' AND ' + opts.isNull + ' IS NULL';
+    }
+    if(opts.isNotNull) {
+        sql += ' AND ' + opts.isNotNull + ' IS NOT NULL';
+    }
+
 	// UNION
     if (opts.union) {
         sql += ' UNION ' + _buildQuery(opts.union);
