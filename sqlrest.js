@@ -989,7 +989,7 @@ function _buildQuery(table, opts) {
         if (typeof opts.like === 'object') {
             like = [];
             _.each(opts.like, function(value, f) {
-                like.push(f + ' LIKE "%' + value + '%"');
+                like.push(f + " LIKE '%" + value + "%'");
             });
             like = like.join(' AND ');
             sql += ' AND ' + like;
