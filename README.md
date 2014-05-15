@@ -282,6 +282,9 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.2.2**   
+Fix backbone collection added models duplicate.
+
 **v0.2.1**  
 Added support for WHERE != sql statements as `wherenot` in the Extended SQL interface.   
 Added support for default urlparams in model config.  
