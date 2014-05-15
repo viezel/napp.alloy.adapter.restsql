@@ -869,7 +869,7 @@ function Sync(method, model, opts) {
         var queryObject = {
             select: lastModifiedColumn,
             orderBy: lastModifiedColumn + ' DESC',
-            isNotNull: lastModifiedColumn,
+            isNotNull: [lastModifiedColumn],
             limit: '0,1',
             where: {}
         };
@@ -948,15 +948,13 @@ function _buildQuery(table, opts) {
 
     sql += ' FROM ' + table;
 
-	// WHERE
+    // WHERE
     if (opts.where && !_.isEmpty(opts.where)) {
         var where;
         if (_.isArray(opts.where)) {
             where = opts.where.join(' AND ');
         } else if (typeof opts.where === 'object') {
-            where = [];
-            where = whereBuilder(where, opts.where);
-            where = where.join(' AND ');
+            where = whereBuilder(opts.where);
         } else {
             where = opts.where;
         }
@@ -965,58 +963,43 @@ function _buildQuery(table, opts) {
     } else {
         sql += ' WHERE 1=1';
     }
-	
-	// WHERE NOT
+    
+    // WHERE NOT
     if (opts.wherenot && !_.isEmpty(opts.wherenot)) {
         var wherenot;
         if (_.isArray(opts.wherenot)) {
             wherenot = opts.wherenot.join(' AND ');
         } else if (typeof opts.wherenot === 'object') {
-            wherenot = [];
             // use the where not operator
-            wherenot = whereBuilder(wherenot, opts.wherenot, " != ");
-            wherenot = wherenot.join(' AND ');
+            wherenot = whereBuilder(opts.wherenot, " != ");
         } else {
             wherenot = opts.wherenot;
         }
 
         sql += ' AND ' + wherenot;
-    } 
-	
-	// LIKE
-    if (opts.like) {
-        var like;
-        if (typeof opts.like === 'object') {
-            like = [];
-            _.each(opts.like, function(value, f) {
-                like.push(f + " LIKE '%" + value + "%'");
-            });
-            like = like.join(' AND ');
-            sql += ' AND ' + like;
-        }
     }
-	
-	// LIKE OR
-    if (opts.likeor) {
-        var likeor;
-        if (typeof opts.likeor === 'object') {
-            likeor = [];
-            _.each(opts.likeor, function(value, f) {
-                likeor.push(f + ' LIKE "%' + value + '%"');
-            });
-            likeor = likeor.join(' OR ');
-            sql += ' AND ' + likeor;
-        }
+    
+    // LIKE
+    if (opts.like && typeof opts.like === 'object') {
+        sql += ' AND ' + whereBuilder(opts.like, ' LIKE ');
+    }
+    
+    // LIKE OR
+    if (opts.likeor && typeof opts.likeor === 'object') {
+        sql += ' AND ' + whereBuilder(opts.likeor, ' LIKE ', ' OR ');
     }
 
-    if(opts.isNull) {
-        sql += ' AND ' + opts.isNull + ' IS NULL';
-    }
-    if(opts.isNotNull) {
-        sql += ' AND ' + opts.isNotNull + ' IS NOT NULL';
+    // IS NULL
+    if(opts.isNull && _.isArray(opts.isNull)) {
+        sql += ' AND ' + whereBuilder(opts.isNull, ' IS NULL ');
     }
 
-	// UNION
+    // IS NOT NULL
+    if(opts.isNotNull && _.isArray(opts.isNotNull)) {
+        sql += ' AND ' + whereBuilder(opts.isNotNull, ' IS NOT NULL ');
+    }
+
+    // UNION
     if (opts.union) {
         sql += ' UNION ' + _buildQuery(opts.union);
     }
@@ -1051,22 +1034,36 @@ function _buildQuery(table, opts) {
     return sql;
 }
 
-function whereBuilder(where, data, operator) {
-	var whereOperator = operator || " = ";
-	
+function whereBuilder(data, operator, condition) {
+    var whereOperator = operator || " = ";
+    var conditionType = condition || " AND ";
+    var where = [];
+
     _.each(data, function(v, f) {
         if (_.isArray(v)) { //select multiple items
             var innerWhere = [];
             _.each(v, function(value) {
-                innerWhere.push(f + whereOperator + _valueType(value));
+                innerWhere.push(_valueType(value));
             });
-            where.push(innerWhere.join(' OR '));
+            where.push(f + ' IN (' + innerWhere.join(', ') + ')');
         } else if (_.isObject(v)) {
-            where = whereBuilder(where, v, whereOperator);
+            where.push(whereBuilder(v, whereOperator));
         } else {
-            where.push(f + whereOperator + _valueType(v));
+            switch(whereOperator) {
+                case ' LIKE ':
+                    where.push(f + whereOperator + "'%" + v + "%'");
+                    break;
+                case ' IS NULL ':
+                case ' IS NOT NULL ':
+                    where.push(v + ' ' + whereOperator.trim());
+                    break;
+                default:
+                    where.push(f + whereOperator + _valueType(v));
+                    break;
+            }
         }
     });
+    where = where.join(conditionType);
     return where;
 }
 
