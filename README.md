@@ -282,6 +282,9 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.2.3**   
+Fix exception on iOS with lastModifiedValue.
+
 **v0.2.2**   
 Fix backbone collection added models duplicate.
 
