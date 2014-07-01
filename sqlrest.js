@@ -324,14 +324,15 @@ function Sync(method, model, opts) {
 	// Check if Last Modified is active
     if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
         //send last modified model datestamp to the remote server
-        var lastModifiedValue = "";
+        var lastModifiedValue = null; 
         try {
             lastModifiedValue = sqlLastModifiedItem();
         } catch (e) {
             logger(DEBUG, "LASTMOD SQL FAILED: ");
 
         }
-        params.headers['Last-Modified'] = lastModifiedValue;
+	if (lastModifiedValue)
+            params.headers['Last-Modified'] = lastModifiedValue;
     }
     
     // Extend the provided url params with those from the model config
