@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.2.3
+ * @version 0.2.4
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -249,7 +249,7 @@ function Sync(method, model, opts) {
     model.idAttribute = model.config.adapter.idAttribute || "id";
 
 	// Debug mode
-    var DEBUG = model.config.debug;
+    var DEBUG = opts.debug || model.config.debug;
 
     // last modified
     var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
