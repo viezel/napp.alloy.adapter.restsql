@@ -160,15 +160,16 @@ function apiCall(_options, _callback) {
 	                status = false;
 	                error = e.message;
 	            }
-            }
-            
+	        }
+           
             _callback({
                 success: status,
                 status: success,
                 code: this.status,
                 data: error,
                 responseText: this.responseText || null,
-                responseJSON: responseJSON || null
+                responseJSON: responseJSON || null,
+                xhr: xhr
             });
 
             cleanup();
@@ -190,7 +191,8 @@ function apiCall(_options, _callback) {
                 error: err.error,
                 data: error,
                 responseText: this.responseText,
-                responseJSON: responseJSON || null
+                responseJSON: responseJSON || null,
+                xhr: xhr
             });
 
             Ti.API.error('[SQL REST API] apiCall ERROR: ' + this.responseText);
@@ -200,10 +202,10 @@ function apiCall(_options, _callback) {
 
             cleanup();
         };
-
+        
         // headers
         for (var header in _options.headers) {
-        	// use value or function to return value
+            // use value or function to return value
             xhr.setRequestHeader(header, _.isFunction(_options.headers[header]) ? _options.headers[header]() : _options.headers[header]);
         }
 
@@ -215,7 +217,7 @@ function apiCall(_options, _callback) {
         	var etag = getETag(_options.url);
         	etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
         }
-
+        
         xhr.send(_options.data || null);
     } else {
         // we are offline
@@ -307,8 +309,9 @@ function Sync(method, model, opts) {
 
     // Send our own custom headers
     if (model.config.hasOwnProperty("headers")) {
-        for (header in model.config.headers) {
-            params.headers[header] = model.config.headers[header];
+        var _headers = _.isFunction(model.config.headers) ? model.config.headers() : model.config.headers; 
+        for (header in _headers) {
+            params.headers[header] = _headers[header];
         }
     }
 
@@ -378,7 +381,7 @@ function Sync(method, model, opts) {
                     var data = parseJSON(_response, parentNode);
                     // Rest API should return a new model id.
                     resp = saveData(data);
-                    _.isFunction(params.success) && params.success(resp);
+                    _.isFunction(params.success) && params.success(resp, _response.code, _response.xhr);
                 } else {
                     // offline or error
 
@@ -452,7 +455,7 @@ function Sync(method, model, opts) {
                         saveData(data);
                     }
                     resp = readSQL(data);
-                    _.isFunction(params.success) && params.success(resp);
+                    _.isFunction(params.success) && params.success(resp, _response.code, _response.xhr);
                     model.trigger("fetch");
                 } else {
                     //error or offline - read local data
@@ -499,7 +502,7 @@ function Sync(method, model, opts) {
                 if (_response.success) {
                     var data = parseJSON(_response, parentNode);
                     resp = saveData(data);
-                    _.isFunction(params.success) && params.success(resp);
+                    _.isFunction(params.success) && params.success(resp, _response.code, _response.xhr);
                 } else {
                     // error or offline - save & use local data
 
@@ -533,7 +536,7 @@ function Sync(method, model, opts) {
                 if (_response.success) {
                     var data = parseJSON(_response, parentNode);
                     resp = deleteSQL();
-                    _.isFunction(params.success) && params.success(resp);
+                    _.isFunction(params.success) && params.success(resp, _response.code, _response.xhr);
                 } else {
                     // error or offline
 
