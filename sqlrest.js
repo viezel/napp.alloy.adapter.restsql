@@ -588,7 +588,7 @@ function Sync(method, model, opts) {
             return;
         }
         if (!_.isArray(data)) { // its a model
-            if (!_.isUndefined(data["is_deleted"]) && data["is_deleted"]) {
+            if (!_.isUndefined(data["is_deleted"]) && data["is_deleted"] == true) {
                 //delete item
                 deleteSQL(data[model.idAttribute]);
             } else if (sqlFindItem(data[model.idAttribute]).length == 1) {
@@ -602,7 +602,7 @@ function Sync(method, model, opts) {
             var currentModels = sqlCurrentModels();
             
             for (var i in data) {
-                if (!_.isUndefined(data[i]["is_deleted"]) && data[i]["is_deleted"]) {
+                if (!_.isUndefined(data[i]["is_deleted"]) && data[i]["is_deleted"]  == true) {
                     //delete item
                     deleteSQL(data[i][model.idAttribute]);
                 } else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
