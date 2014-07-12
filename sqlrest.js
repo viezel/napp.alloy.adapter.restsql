@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.2.4
+ * @version 0.2.2
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -249,7 +249,7 @@ function Sync(method, model, opts) {
     model.idAttribute = model.config.adapter.idAttribute || "id";
 
 	// Debug mode
-    var DEBUG = opts.debug || model.config.debug;
+    var DEBUG = model.config.debug;
 
     // last modified
     var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
@@ -261,6 +261,15 @@ function Sync(method, model, opts) {
 	
     // Used for custom parsing of the response data
     var parentNode = model.config.parentNode;
+    
+    // Used for custom parsing of the create response data
+    var parentNodeForCreate = model.config.parentNodeForCreate;
+    
+    // Used for custom parsing of the create response data
+    var parentNodeForUpdate = model.config.parentNodeForUpdate;
+    
+    // Used for custom parsing of the create response data
+    var parentNodeForDelete = model.config.parentNodeForDelete;
 
     // Validate the response data and only allow those items with all columns defined in the object to be saved to the database.
     var useStrictValidation = model.config.useStrictValidation;
@@ -324,15 +333,14 @@ function Sync(method, model, opts) {
 	// Check if Last Modified is active
     if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
         //send last modified model datestamp to the remote server
-        var lastModifiedValue = null; 
+        var lastModifiedValue = "";
         try {
             lastModifiedValue = sqlLastModifiedItem();
         } catch (e) {
             logger(DEBUG, "LASTMOD SQL FAILED: ");
 
         }
-	if (lastModifiedValue)
-            params.headers['Last-Modified'] = lastModifiedValue;
+        params.headers['Last-Modified'] = lastModifiedValue;
     }
     
     // Extend the provided url params with those from the model config
@@ -375,10 +383,14 @@ function Sync(method, model, opts) {
 
             apiCall(params, function(_response) {
                 if (_response.success) {
-                    var data = parseJSON(_response, parentNode);
+                	
+                    var data = parseJSON(_response, parentNodeForCreate);
+                    
                     // Rest API should return a new model id.
                     resp = saveData(data);
                     _.isFunction(params.success) && params.success(resp);
+                    
+                    logger(DEBUG, "create options response success", resp);     
                 } else {
                     // offline or error
 
@@ -400,7 +412,6 @@ function Sync(method, model, opts) {
             });
             break;
         case 'read':
-
             if (!isCollection && model.id) {
                 // find model by id
                 params.url = params.url + '/' + model.id;
@@ -421,24 +432,28 @@ function Sync(method, model, opts) {
             	params.eTagEnabled = true;
             }
 
-            // check is all the necessary info is in place for last modified
-            if (lastModifiedColumn && addModifedToUrl && lastModifiedValue) {
-                // add last modified date to url
-                var obj = {};
-                obj[lastModifiedColumn] = lastModifiedValue;
-                params.url = encodeData(obj, params.url);
-            }
-
-            logger(DEBUG, "read options", params);
-
             if (!params.localOnly && (params.initFetchWithLocalData || initFetchWithLocalData)) {
                 // read local data before receiving server data
                 resp = readSQL();
+                
+                // check is all the necessary info is in place for last modified
+	            if (lastModifiedColumn && addModifedToUrl && lastModifiedValue) {
+	                // add last modified date to url
+	                if(model.length >= 1)
+	                {
+	                	var obj = {};
+		                obj[lastModifiedColumn] = lastModifiedValue;
+		                params.url = encodeData(obj, params.url);
+	                }
+	            }
+                
                 _.isFunction(params.success) && params.success(resp);
                 model.trigger("fetch", {
                     serverData: false
                 });
             }
+            
+            logger(DEBUG, "read options", params);
 
             apiCall(params, function(_response) {
                 if (_response.success) {
@@ -456,7 +471,12 @@ function Sync(method, model, opts) {
                     model.trigger("fetch");
                 } else {
                     //error or offline - read local data
-                    if ( params.initFetchWithLocalData || initFetchWithLocalData ) {
+                    if(_.isUndefined(params.initFetchWithLocalData))
+                    {
+                    	params.initFetchWithLocalData = initFetchWithLocalData;
+                    }
+                    
+                    if ( params.initFetchWithLocalData ) {
                     }else{
                     	resp = readSQL();
                     }
@@ -497,7 +517,7 @@ function Sync(method, model, opts) {
 
             apiCall(params, function(_response) {
                 if (_response.success) {
-                    var data = parseJSON(_response, parentNode);
+                    var data = parseJSON(_response, parentNodeForUpdate);
                     resp = saveData(data);
                     _.isFunction(params.success) && params.success(resp);
                 } else {
@@ -531,7 +551,7 @@ function Sync(method, model, opts) {
 
             apiCall(params, function(_response) {
                 if (_response.success) {
-                    var data = parseJSON(_response, parentNode);
+                    var data = parseJSON(_response, parentNodeForDelete);
                     resp = deleteSQL();
                     _.isFunction(params.success) && params.success(resp);
                 } else {
@@ -568,7 +588,7 @@ function Sync(method, model, opts) {
             return;
         }
         if (!_.isArray(data)) { // its a model
-            if (!_.isUndefined(data["is_deleted"])) {
+            if (!_.isUndefined(data["is_deleted"]) && data["is_deleted"] == true) {
                 //delete item
                 deleteSQL(data[model.idAttribute]);
             } else if (sqlFindItem(data[model.idAttribute]).length == 1) {
@@ -580,8 +600,9 @@ function Sync(method, model, opts) {
             }
         } else { //its an array of models
             var currentModels = sqlCurrentModels();
+            
             for (var i in data) {
-                if (!_.isUndefined(data[i]["is_deleted"])) {
+                if (!_.isUndefined(data[i]["is_deleted"]) && data[i]["is_deleted"]  == true) {
                     //delete item
                     deleteSQL(data[i][model.idAttribute]);
                 } else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
@@ -844,7 +865,7 @@ function Sync(method, model, opts) {
         var rs = db.execute(sql);
         var output = [];
         while (rs.isValidRow()) {
-            output.push(rs.fieldByName(model.idAttribute));
+            output.push(rs.fieldByName(model.idAttribute,Titanium.Database.FIELD_TYPE_STRING));
             rs.next();
         }
         rs.close();
