@@ -602,7 +602,7 @@ function Sync(method, model, opts) {
             var currentModels = sqlCurrentModels();
             
             for (var i in data) {
-                if (!_.isUndefined(data[i]["is_deleted"]) && data["is_deleted"]) {
+                if (!_.isUndefined(data[i]["is_deleted"]) && data[i]["is_deleted"]) {
                     //delete item
                     deleteSQL(data[i][model.idAttribute]);
                 } else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
