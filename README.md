@@ -282,6 +282,10 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.2.5**   
+Bugfix for localOnly
+
+
 **v0.2.4**   
 Added support for debug mode in a specific adapter call. This is handle if you only want to debug a small part of your app, and not every call for a specific model/collection. 
 Do the following:
