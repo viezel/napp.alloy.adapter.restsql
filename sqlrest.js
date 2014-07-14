@@ -456,7 +456,7 @@ function Sync(method, model, opts) {
                     model.trigger("fetch");
                 } else {
                     //error or offline - read local data
-                    if ( params.initFetchWithLocalData || initFetchWithLocalData ) {
+                    if (!params.localOnly && (params.initFetchWithLocalData || initFetchWithLocalData)) {
                     }else{
                     	resp = readSQL();
                     }
