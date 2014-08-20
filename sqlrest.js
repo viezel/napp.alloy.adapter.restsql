@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.2.4
+ * @version 0.2.5
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -459,7 +459,7 @@ function Sync(method, model, opts) {
                     model.trigger("fetch");
                 } else {
                     //error or offline - read local data
-                    if ( params.initFetchWithLocalData || initFetchWithLocalData ) {
+                    if (!params.localOnly && (params.initFetchWithLocalData || initFetchWithLocalData)) {
                     }else{
                     	resp = readSQL();
                     }
