@@ -114,26 +114,7 @@ You can also specify this as a function instead to allow custom parsing the feed
 http://www.google.com/calendar/feeds/developer-calendar@google.com/public/full?alt=json&orderby=starttime&max-results=15&singleevents=true&sortorder=ascending&futureevents=true
 
 *Custom parsing:*
-			// check if collection
-			if (_.isArray(data)) {
-				var entries = [];
-	
-				_.each(data, function(_entry) {
-					var entry = {};
-					
-					entry = _entry;
-					
-					// make it to a string
-					entry.contacts = JSON.stringify(_entry.contacts);
-	
-					entries.push(entry);
-				});
-				return entries;
-			} else {
-				// its a model
-				data.contacts = JSON.stringify(data.contacts);
-				return entries;
-			}
+			
 ```javascript
 parentNode: function (data) {
 	// check if its a collection
