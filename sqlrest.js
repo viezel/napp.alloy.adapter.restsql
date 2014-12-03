@@ -217,7 +217,7 @@ function apiCall(_options, _callback) {
         	etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
         }
 
-        xhr.send(_options.data || null);
+        xhr.send(_options.data);
     } else {
         // we are offline
         _callback({
