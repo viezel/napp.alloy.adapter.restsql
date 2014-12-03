@@ -305,11 +305,18 @@ function Sync(method, model, opts) {
 
     //set default headers
     params.headers = params.headers || {};
-
+	
+	// process the runtime params
+	for (var header in params.headers) {
+		params.headers[header] = _.isFunction(params.headers[header]) ? params.headers[header]() : params.headers[header];
+	}
     // Send our own custom headers
     if (model.config.hasOwnProperty("headers")) {
-        for (header in model.config.headers) {
-            params.headers[header] = model.config.headers[header];
+        for (var header in model.config.headers) {
+            // only process headers from model config if not provided through runtime params
+            if(!params.headers[header]){
+            	params.headers[header] = _.isFunction(model.config.headers[header]) ? model.config.headers[header]() : model.config.headers[header];
+            }
         }
     }
 
