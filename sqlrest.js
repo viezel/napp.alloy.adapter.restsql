@@ -128,11 +128,12 @@ function Migrator(config, transactionDb) {
 
 function apiCall(_options, _callback) {
     //adding localOnly
-    if (Ti.Network.online && !_options.localOnly) {
-        //we are online - talk with Rest API
-
+   if (Ti.Network.online && !_options.localOnly) {
+        //we are online - talk with Rest API	
+		
         var xhr = Ti.Network.createHTTPClient({
-            timeout: _options.timeout || 7000
+            timeout: _options.timeout || 7000,
+            cache: false
         });
 
         //Prepare the request
