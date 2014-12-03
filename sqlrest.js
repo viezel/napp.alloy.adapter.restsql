@@ -314,6 +314,7 @@ function Sync(method, model, opts) {
 
     // We need to ensure that we have a base url.
     if (!params.url) {
+    	model.config.URL = _.isFunction(model.config.URL) ? model.config.URL() : model.config.URL;
         params.url = (model.config.URL || model.url());
         if (!params.url) {
             Ti.API.error("[SQL REST API] ERROR: NO BASE URL");
