@@ -295,6 +295,10 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.2.6**   
+Bugfix for runtime headers   
+Added support for dynamic passed url. eg. function(){ return newUrl; }
+
 **v0.2.5**   
 Bugfix for localOnly
 
