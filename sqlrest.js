@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.2.6
+ * @version 0.2.7
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -279,7 +279,7 @@ function Sync(method, model, opts) {
     var isCollection = (model instanceof Backbone.Collection) ? true : false;
 
     // returns the error response instead of the local data
-    var returnErrorResponse = model.config.returnErrorResponse;
+    var returnErrorResponse = opts.returnErrorResponse || model.config.returnErrorResponse;
 
     var singleModelRequest = null;
     if (lastModifiedColumn) {
