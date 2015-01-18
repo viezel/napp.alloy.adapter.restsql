@@ -341,7 +341,7 @@ function Sync(method, model, opts) {
 
         }
 	    if (lastModifiedValue) {
-            params.headers['Last-Modified'] = lastModifiedValue;
+            params.headers['If-Modified-Since'] = lastModifiedValue;
         }
     }
 
@@ -452,14 +452,16 @@ function Sync(method, model, opts) {
 
             apiCall(params, function(_response) {
                 if (_response.success) {
-                    if (deleteAllOnFetch || params.deleteAllOnFetch) {
-                        deleteAllSQL();
-                    }
+                    if (_response.code != 304) {
+                        if (deleteAllOnFetch || params.deleteAllOnFetch) {
+                            deleteAllSQL();
+                        }
 
-                    var data = parseJSON(_response, parentNode);
-                    if (!params.localOnly) {
-                        //we dont want to manipulate the data on localOnly requests
-                        saveData(data);
+                        var data = parseJSON(_response, parentNode);
+                        if (!params.localOnly) {
+                            //we dont want to manipulate the data on localOnly requests
+                            saveData(data);
+                        }
                     }
                     resp = readSQL(data);
                     _.isFunction(params.success) && params.success(resp);
@@ -661,7 +663,7 @@ function Sync(method, model, opts) {
 
         // Last Modified logic
         if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
-            values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
+            values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().lang('en').zone('GMT').format('ddd, D MMM YYYY HH:mm:ss ZZ');
         }
 
         // Assemble create query
@@ -811,7 +813,7 @@ function Sync(method, model, opts) {
         }
 
         if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
-            values[_.indexOf(names, lastModifiedColumn + "=?")] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
+            values[_.indexOf(names, lastModifiedColumn + "=?")] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().lang('en').zone('GMT').format('YYYY-MM-DD HH:mm:ss ZZ');
         }
 
         // compose the update query
