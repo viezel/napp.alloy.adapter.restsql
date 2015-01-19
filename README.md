@@ -295,6 +295,9 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.2.8**  
+Added If-Modified-Since support (HTTP RFC2616). Thanks @jvandijk
+
 **v0.2.7**  
 Use returnErrorResponse runtime
 
