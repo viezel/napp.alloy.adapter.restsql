@@ -129,8 +129,8 @@ function Migrator(config, transactionDb) {
 function apiCall(_options, _callback) {
     //adding localOnly
    if (Ti.Network.online && !_options.localOnly) {
-        //we are online - talk with Rest API	
-		
+        //we are online - talk with Rest API
+
         var xhr = Ti.Network.createHTTPClient({
             timeout: _options.timeout || 7000,
             cache: false
@@ -140,16 +140,16 @@ function apiCall(_options, _callback) {
         xhr.open(_options.type, _options.url);
 
         xhr.onload = function() {
-            var responseJSON, 
+            var responseJSON,
             	success = (this.status <= 304) ? "ok" : "error",
-                status = true, 
+                status = true,
                 error;
-			
+
 			// save the eTag for future reference
 			if(_options.eTagEnabled && success){
 				setETag(_options.url, xhr.getResponseHeader('ETag'));
 			}
-			
+
 			// we dont want to parse the JSON on a empty response
 			if(this.status != 304 && this.status != 204){
 	            // parse JSON
@@ -162,7 +162,7 @@ function apiCall(_options, _callback) {
 	                error = e.message;
 	            }
             }
-            
+
             _callback({
                 success: status,
                 status: success,
@@ -211,7 +211,7 @@ function apiCall(_options, _callback) {
         if (_options.beforeSend) {
             _options.beforeSend(xhr);
         }
-        
+
         if(_options.eTagEnabled) {
         	var etag = getETag(_options.url);
         	etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
@@ -256,10 +256,10 @@ function Sync(method, model, opts) {
     var lastModifiedColumn = model.config.adapter.lastModifiedColumn;
     var addModifedToUrl = model.config.adapter.addModifedToUrl;
     var lastModifiedDateFormat = model.config.adapter.lastModifiedDateFormat;
-	
+
 	// eTag enabled
 	var eTagEnabled = model.config.eTagEnabled;
-	
+
     // Used for custom parsing of the response data
     var parentNode = model.config.parentNode;
 
@@ -305,7 +305,7 @@ function Sync(method, model, opts) {
 
     //set default headers
     params.headers = params.headers || {};
-	
+
 	// process the runtime params
 	for (var header in params.headers) {
 		params.headers[header] = _.isFunction(params.headers[header]) ? params.headers[header]() : params.headers[header];
@@ -329,21 +329,22 @@ function Sync(method, model, opts) {
             return;
         }
     }
-	
+
 	// Check if Last Modified is active
     if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
         //send last modified model datestamp to the remote server
-        var lastModifiedValue = null; 
+        var lastModifiedValue = null;
         try {
             lastModifiedValue = sqlLastModifiedItem();
         } catch (e) {
             logger(DEBUG, "LASTMOD SQL FAILED: ");
 
         }
-	if (lastModifiedValue)
-            params.headers['Last-Modified'] = lastModifiedValue;
+	    if (lastModifiedValue) {
+            params.headers['If-Modified-Since'] = lastModifiedValue;
+        }
     }
-    
+
     // Extend the provided url params with those from the model config
     if (_.isObject(params.urlparams) || model.config.URLPARAMS) {
         _.extend(params.urlparams, _.isFunction(model.config.URLPARAMS) ? model.config.URLPARAMS() : model.config.URLPARAMS);
@@ -425,7 +426,7 @@ function Sync(method, model, opts) {
                 // build url with parameters
                 params.url = encodeData(params.urlparams, params.url);
             }
-            
+
             if(eTagEnabled){
             	params.eTagEnabled = true;
             }
@@ -451,14 +452,16 @@ function Sync(method, model, opts) {
 
             apiCall(params, function(_response) {
                 if (_response.success) {
-                    if (deleteAllOnFetch || params.deleteAllOnFetch) {
-                        deleteAllSQL();
-                    }
+                    if (_response.code != 304) {
+                        if (deleteAllOnFetch || params.deleteAllOnFetch) {
+                            deleteAllSQL();
+                        }
 
-                    var data = parseJSON(_response, parentNode);
-                    if (!params.localOnly) {
-                        //we dont want to manipulate the data on localOnly requests
-                        saveData(data);
+                        var data = parseJSON(_response, parentNode);
+                        if (!params.localOnly) {
+                            //we dont want to manipulate the data on localOnly requests
+                            saveData(data);
+                        }
                     }
                     resp = readSQL(data);
                     _.isFunction(params.success) && params.success(resp);
@@ -660,7 +663,7 @@ function Sync(method, model, opts) {
 
         // Last Modified logic
         if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
-            values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
+            values[_.indexOf(names, lastModifiedColumn)] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().lang('en').zone('GMT').format('ddd, D MMM YYYY HH:mm:ss ZZ');
         }
 
         // Assemble create query
@@ -810,7 +813,7 @@ function Sync(method, model, opts) {
         }
 
         if (lastModifiedColumn && _.isUndefined(params.disableLastModified)) {
-            values[_.indexOf(names, lastModifiedColumn + "=?")] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().format('YYYY-MM-DD HH:mm:ss');
+            values[_.indexOf(names, lastModifiedColumn + "=?")] = lastModifiedDateFormat ? moment().format(lastModifiedDateFormat) : moment().lang('en').zone('GMT').format('YYYY-MM-DD HH:mm:ss ZZ');
         }
 
         // compose the update query
@@ -969,7 +972,7 @@ function _buildQuery(table, opts) {
     } else {
         sql += ' WHERE 1=1';
     }
-	
+
 	// WHERE NOT
     if (opts.wherenot && !_.isEmpty(opts.wherenot)) {
         var wherenot;
@@ -985,8 +988,8 @@ function _buildQuery(table, opts) {
         }
 
         sql += ' AND ' + wherenot;
-    } 
-	
+    }
+
 	// LIKE
     if (opts.like) {
         var like;
@@ -999,7 +1002,7 @@ function _buildQuery(table, opts) {
             sql += ' AND ' + like;
         }
     }
-	
+
 	// LIKE OR
     if (opts.likeor) {
         var likeor;
@@ -1012,7 +1015,7 @@ function _buildQuery(table, opts) {
             sql += ' AND ' + likeor;
         }
     }
-    
+
 	// UNION
     if (opts.union) {
         sql += ' UNION ' + _buildQuery(opts.union);
@@ -1050,7 +1053,7 @@ function _buildQuery(table, opts) {
 
 function whereBuilder(where, data, operator) {
 	var whereOperator = operator || " = ";
-	
+
     _.each(data, function(v, f) {
         if (_.isArray(v)) { //select multiple items
             var innerWhere = [];
@@ -1309,7 +1312,7 @@ function getETag(url){
 	var data = obj[url];
 	return data || null;
 }
- 
+
 /**
  * Set the ETag for the given url
  * @param {Object} url
