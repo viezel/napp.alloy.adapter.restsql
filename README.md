@@ -114,24 +114,37 @@ You can also specify this as a function instead to allow custom parsing the feed
 http://www.google.com/calendar/feeds/developer-calendar@google.com/public/full?alt=json&orderby=starttime&max-results=15&singleevents=true&sortorder=ascending&futureevents=true
 
 *Custom parsing:*
-
+			
 ```javascript
 parentNode: function (data) {
-	var entries = [];
-
-	_.each(data.feed.entry, function(_entry) {
+	// check if its a collection
+	if (_.isArray(data)) {	
+		var entries = [];
+		_.each(data.feed.entry, function(_entry) {
+			var entry = {};
+	
+			entry.id = _entry.id.$t;
+			entry.startTime = _entry.gd$when[0].startTime;
+			entry.endTime = _entry.gd$when[0].endTime;
+			entry.title = _entry.title.$t;
+			entry.content = _entry.content.$t;
+	
+			entries.push(entry);
+		});
+	
+		return entries;
+	} else {
+		// its a model
+		var _entry = data.feed.entry;
+		
 		var entry = {};
-
 		entry.id = _entry.id.$t;
 		entry.startTime = _entry.gd$when[0].startTime;
 		entry.endTime = _entry.gd$when[0].endTime;
 		entry.title = _entry.title.$t;
 		entry.content = _entry.content.$t;
-
-		entries.push(entry);
-	});
-
-	return entries;
+		return entry;
+	}
 }
 ```
 
@@ -281,6 +294,16 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+
+**v0.2.8**  
+Added If-Modified-Since support (HTTP RFC2616). Thanks @jvandijk
+
+**v0.2.7**  
+Use returnErrorResponse runtime
+
+**v0.2.6**   
+Bugfix for runtime headers   
+Added support for dynamic passed url. eg. function(){ return newUrl; }
 
 **v0.2.5**   
 Bugfix for localOnly
