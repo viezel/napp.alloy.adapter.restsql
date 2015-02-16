@@ -128,10 +128,12 @@ function Migrator(config, transactionDb) {
 
 function apiCall(_options, _callback) {
     //adding localOnly
+
+   var xhr = null;
    if (Ti.Network.online && !_options.localOnly) {
         //we are online - talk with Rest API
 
-        var xhr = Ti.Network.createHTTPClient({
+        xhr = Ti.Network.createHTTPClient({
             timeout: _options.timeout || 7000,
             cache: false
         });
@@ -239,6 +241,7 @@ function apiCall(_options, _callback) {
         responseJSON = null;
     }
 
+    return xhr;
 }
 
 function Sync(method, model, opts) {
@@ -383,7 +386,7 @@ function Sync(method, model, opts) {
             params.data = JSON.stringify(model.toJSON());
             logger(DEBUG, "create options", params);
 
-            apiCall(params, function(_response) {
+            return apiCall(params, function(_response) {
                 if (_response.success) {
                     var data = parseJSON(_response, parentNode);
                     // Rest API should return a new model id.
@@ -450,7 +453,7 @@ function Sync(method, model, opts) {
                 });
             }
 
-            apiCall(params, function(_response) {
+            return apiCall(params, function(_response) {
                 if (_response.success) {
                     if (_response.code != 304) {
                         if (deleteAllOnFetch || params.deleteAllOnFetch) {
@@ -507,7 +510,7 @@ function Sync(method, model, opts) {
             params.data = JSON.stringify(model.toJSON());
             logger(DEBUG, "update options", params);
 
-            apiCall(params, function(_response) {
+            return apiCall(params, function(_response) {
                 if (_response.success) {
                     var data = parseJSON(_response, parentNode);
                     resp = saveData(data);
@@ -541,7 +544,7 @@ function Sync(method, model, opts) {
             params.url = params.url + '/' + model.id;
             logger(DEBUG, "delete options", params);
 
-            apiCall(params, function(_response) {
+            return apiCall(params, function(_response) {
                 if (_response.success) {
                     var data = parseJSON(_response, parentNode);
                     resp = deleteSQL();
