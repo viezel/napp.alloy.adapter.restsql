@@ -68,6 +68,7 @@ Then add the `sqlrest.js` to `PROJECT_FOLDER/app/assets/alloy/sync/`. Create the
 
 Use the `debug` property in the above example to get logs printed with sql statements and server respose to debug your usage of the sqlrest adapter.
 
+If you plan on storing a field call `id` in your database table that maps to your model, be sure to specify `idAttribute`.  It is not assumed that model.id will be the primary id in your DB table.  If `idAttribute` is not specified an auto generated GUID will be set as the id along with an alloy_id. 
 
 ## Special Properties
 
