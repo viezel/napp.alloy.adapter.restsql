@@ -349,9 +349,10 @@ function Sync(method, model, opts) {
         }
     }
 
-    // Extend the provided url params with those from the model config
-    if (_.isObject(params.urlparams) || model.config.URLPARAMS) {
-        _.extend(params.urlparams, _.isFunction(model.config.URLPARAMS) ? model.config.URLPARAMS() : model.config.URLPARAMS);
+    // Extend the provided url params with those from the model config    
+    if (model.config.URLPARAMS) {
+        _.isUndefined(params.urlparams) && (params.urlparams={});    
+        _.extend(params.urlparams, (_.isFunction(model.config.URLPARAMS) ? model.config.URLPARAMS() : model.config.URLPARAMS));        
     }
 
     // For older servers, emulate JSON by encoding the request into an HTML-form.
