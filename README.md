@@ -269,6 +269,32 @@ The adapter uses the `IF-NONE-MATCH` header to send the newest ETag for the prov
 **Notice: This may be a good idea not to use this while developing, because it will cache and store your ETag - which might end up in wrong situations while you are working**
 
 
+## Extended Migration methods
+
+### createIndex 
+
+Adds more indexes to the database table, primary key is already an index.
+Both one column index and multiple column index are supported.
+Thanks to @moshemarciano for this feature.
+
+	migration.up = function(db) {
+		db.createTable({
+	        columns: {
+	            id: 'INTEGER PRIMARY KEY',
+	            time: 'TEXT'
+	        }
+		});
+		
+		// the new stuff
+		db.createIndex({
+			'firstIdx' : ['id', 'time'],   
+		   	'timeIdx' : 'time'
+		});
+	};
+
+
+
+
 ## Example - Using infinite scrolling
 
 In the below example - im showing how to use this adapter with [alloy scroll widget](https://github.com/FokkeZB/nl.fokkezb.infiniteScroll) by @FokkeZB 
@@ -318,7 +344,8 @@ function infiniteCallback(e) {
 
 **v0.3.0**  
 Added a new default params structure to clear up the code.   
-Added `requestparams` to make urls more dynamically. 
+Added `requestparams` to make urls more dynamically.  
+Added `createIndex` migration functionality.
 
 **v0.2.8**  
 Added If-Modified-Since support (HTTP RFC2616). Thanks @jvandijk
