@@ -72,6 +72,26 @@ If you plan on storing a field call `id` in your database table that maps to you
 
 ## Special Properties
 
+### Request Params
+
+Change the url dynamically by using {} e.g. `{album_id}`.
+
+	exports.definition = {
+	    config : {
+	        "URL": "http://urlPathToRestAPIServer.com/api/albums/{album_id}/modelname",
+		}
+	}
+
+Use it like this in your controller:
+
+	collection.fetch({
+		requestparams: {
+			album_id: 22
+		}
+	});
+	
+Will result in: http://urlPathToRestAPIServer.com/api/albums/22/modelname
+
 ### Last Modified
 
 Save a timestamp for each model in the database. Use the `lastModifiedColumn` property in the adapter config to send the HTTP Header "Last-Modifed" with the newest timestamp. This is great for improving the amount of data send from the remote server to the app. 
@@ -295,6 +315,10 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+
+**v0.3.0**  
+Added a new default params structure to clear up the code.   
+Added `requestparams` to make urls more dynamically. 
 
 **v0.2.8**  
 Added If-Modified-Since support (HTTP RFC2616). Thanks @jvandijk
