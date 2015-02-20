@@ -39,6 +39,7 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 				"type" : "sqlrest",
 				"collection_name" : "modelname",
 				"idAttribute" : "id",
+				"deletedAttribute": "my_custom_deleted_variable",
 				
 				// optimise the amount of data transfer from remote server to app
 				"addModifedToUrl": true,
@@ -345,7 +346,8 @@ function infiniteCallback(e) {
 **v0.3.0**  
 Added a new default params structure to clear up the code.   
 Added `requestparams` to make urls more dynamically.  
-Added `createIndex` migration functionality.
+Added `createIndex` migration functionality.  
+Added `deletedAttribute` to support use a alternative to 'is_deleted'.  
 
 **v0.2.8**  
 Added If-Modified-Since support (HTTP RFC2616). Thanks @jvandijk

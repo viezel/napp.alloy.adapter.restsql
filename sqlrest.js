@@ -260,6 +260,7 @@ function Sync(method, model, opts) {
 	    db;
 
 	model.idAttribute = model.config.adapter.idAttribute || "id";
+	model.deletedAttribute = model.config.adapter.deletedAttribute || 'is_deleted';
 
 	// Debug mode
 	var DEBUG = opts.debug || model.config.debug;
@@ -620,7 +621,7 @@ function Sync(method, model, opts) {
 			return;
 		}
 		if (!_.isArray(data)) {// its a model
-			if (!_.isUndefined(data["is_deleted"]) && data["is_deleted"] == true) {
+			if (!_.isUndefined(data[model.deletedAttribute]) && data[model.deletedAttribute] == true) {
 				//delete item
 				deleteSQL(data[model.idAttribute]);
 			} else if (sqlFindItem(data[model.idAttribute]).length == 1) {
@@ -633,7 +634,7 @@ function Sync(method, model, opts) {
 		} else {//its an array of models
 			var currentModels = sqlCurrentModels();
 			for (var i in data) {
-				if (!_.isUndefined(data[i]["is_deleted"]) && data[i]["is_deleted"] == true) {
+				if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
 					//delete item
 					deleteSQL(data[i][model.idAttribute]);
 				} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
