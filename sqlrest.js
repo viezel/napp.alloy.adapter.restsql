@@ -146,9 +146,6 @@ function apiCall(_options, _callback) {
 			validatesSecureCertificate: _options.validatesSecureCertificate
 		});
 
-		//Prepare the request
-		xhr.open(_options.type, _options.url);
-
 		xhr.onload = function() {
 			var responseJSON,
 			    success = (this.status <= 304) ? "ok" : "error",
@@ -227,6 +224,9 @@ function apiCall(_options, _callback) {
 			var etag = getETag(_options.url);
 			etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
 		}
+
+        //Prepare the request
+		xhr.open(_options.type, _options.url);
 
 		xhr.send(_options.data);
 	} else {
