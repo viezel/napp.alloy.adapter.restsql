@@ -343,6 +343,10 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.3.1**  
+Update InstallDatabase method to reflect the original sql adapter.  
+Bugfix for httpheader must be set before xhr.open(). 
+
 **v0.3.0**  
 Added a new default params structure to clear up the code.   
 Added `requestparams` to make urls more dynamically.  
