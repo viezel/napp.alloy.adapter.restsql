@@ -209,8 +209,11 @@ function apiCall(_options, _callback) {
 
 			cleanup();
 		};
+		
+		//Prepare the request
+		xhr.open(_options.type, _options.url);
 
-		// headers
+		// headers (should be between open and send methods)
 		for (var header in _options.headers) {
 			// use value or function to return value
 			xhr.setRequestHeader(header, _.isFunction(_options.headers[header]) ? _options.headers[header]() : _options.headers[header]);
@@ -225,8 +228,7 @@ function apiCall(_options, _callback) {
 			etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
 		}
 
-        //Prepare the request
-		xhr.open(_options.type, _options.url);
+        	
 
 		xhr.send(_options.data);
 	} else {
