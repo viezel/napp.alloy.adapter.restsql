@@ -1,0 +1,39 @@
+{
+  "name": "alloy-sync-sqlrest",
+  "version": "0.3.2",
+  "description": "SQL & RestAPI Sync Adapter for Titanium Alloy",
+  "author": {
+    "name": "Mads Møller",
+    "email": "mm@napp.dk"
+  },
+  "homepage": "https://github.com/viezel/napp.alloy.adapter.restsql",
+  "bugs": {
+    "url": "https://github.com/viezel/napp.alloy.adapter.restsql/issues"
+  },
+  "appc-npm": {
+    "target": {
+      "alloy": "app/vendor/alloy/sync/"
+    },
+    "ignore": [
+      ".git",
+      ".project",
+      "README.md",
+      "package.json",
+      "test"
+    ]
+  },
+  "scripts": {
+    "postinstall": "node ./appc-npm"
+  },
+  "keywords": [
+    "alloy",
+    "alloy-sync",
+    "appc-npm",
+    "appcelerator",
+    "crud",
+    "napp",
+    "rest",
+    "sqlite",
+    "titanium"
+  ]
+}
