@@ -32,7 +32,7 @@ Grab the latest version from the [repo](https://raw.githubusercontent.com/viezel
 This library can also be installed as NPM dependency. Add it by running in the root of your `PROJECT_FOLDER`.
 
 ```
-npm install alloy-sync-restsql --save-dev
+npm install alloy-sync-restsql --save
 ```
 This will install the library in `PROJECT_FOLDER/app/vendor/alloy/sync`. Vendor is being used so you'll be able to ignore this dependency from version control.
 
