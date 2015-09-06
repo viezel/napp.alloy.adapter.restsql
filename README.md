@@ -25,7 +25,7 @@ The adapter has been desinged with the following structure.
 
 ### Manual
 
-Grab the latest version from the [repo](https://raw.githubusercontent.com/viezel/napp.alloy.adapter.restsql/master/sqlrest.js) and save the file to `PROJECT_FOLDER/app/alloy/sync`
+Grab the latest version from the [repo](https://raw.githubusercontent.com/viezel/napp.alloy.adapter.restsql/master/sqlrest.js) and save the file to `PROJECT_FOLDER/app/lib/alloy/sync`
 
 ### Appc NPM
 
