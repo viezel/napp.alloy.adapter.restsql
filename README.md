@@ -21,6 +21,21 @@ The adapter has been desinged with the following structure.
 * **404:** The resource was not found.
 * **500:** A server error occurred.
 
+## Installation
+
+### Manual
+
+Grab the latest version from the [repo](https://raw.githubusercontent.com/viezel/napp.alloy.adapter.restsql/master/sqlrest.js) and save the file to `PROJECT_FOLDER/app/lib/alloy/sync`
+
+### Appc NPM
+
+This library can also be installed as NPM dependency. Add it by running in the root of your `PROJECT_FOLDER`.
+
+```
+npm install alloy-sync-restsql --save
+```
+This will install the library in `PROJECT_FOLDER/app/vendor/alloy/sync`. Vendor is being used so you'll be able to ignore this dependency from version control.
+
 ## How To Use
 
 Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
