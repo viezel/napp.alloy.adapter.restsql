@@ -209,7 +209,7 @@ function apiCall(_options, _callback) {
 
 			cleanup();
 		};
-		
+
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
 
@@ -228,7 +228,7 @@ function apiCall(_options, _callback) {
 			etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
 		}
 
-        	
+
 
 		xhr.send(_options.data);
 	} else {
@@ -797,7 +797,11 @@ function Sync(method, model, opts) {
 			// create list of rows returned from query
 			_.times(fc, function(c) {
 				var fn = rs.fieldName(c);
-				o[fn] = rs.fieldByName(fn);
+                try {
+                    o[fn] = JSON.parse(rs.fieldByName(fn));
+                } catch (e) {
+                    o[fn] = rs.fieldByName(fn);
+                }
 			});
 			values.push(o);
 
