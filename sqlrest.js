@@ -797,10 +797,15 @@ function Sync(method, model, opts) {
 			// create list of rows returned from query
 			_.times(fc, function(c) {
 				var fn = rs.fieldName(c);
-                try {
-                    o[fn] = JSON.parse(rs.fieldByName(fn));
-                } catch (e) {
-                    o[fn] = rs.fieldByName(fn);
+                var text = rs.fieldByName(fn);
+                if (/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').
+                    replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+                    replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+                    //the json is ok
+                    o[fn] = JSON.parse(text);
+                }else{
+                    //the json is not ok
+                    o[fn] = text;
                 }
 			});
 			values.push(o);
@@ -825,6 +830,7 @@ function Sync(method, model, opts) {
 
 		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
 		resp = len === 1 ? values[0] : values;
+        logger(DEBUG, "SQL RESULT: " + resp);
 		return resp;
 	}
 
