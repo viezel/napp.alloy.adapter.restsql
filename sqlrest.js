@@ -798,14 +798,14 @@ function Sync(method, model, opts) {
 			_.times(fc, function(c) {
 				var fn = rs.fieldName(c);
                 var text = rs.fieldByName(fn);
-                if (/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').
-                    replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
-                    replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
-                    //the json is ok
-                    o[fn] = JSON.parse(text);
-                }else{
-                    //the json is not ok
-                    o[fn] = text;
+                o[fn] = text;
+                if (text && _.isString(text)) {
+                    if (/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').
+                        replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+                        replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+                        //the json is ok
+                        o[fn] = JSON.parse(text);
+                    }
                 }
 			});
 			values.push(o);
