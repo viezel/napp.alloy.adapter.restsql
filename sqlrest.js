@@ -830,7 +830,6 @@ function Sync(method, model, opts) {
 
 		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
 		resp = len === 1 ? values[0] : values;
-        logger(DEBUG, "SQL RESULT: " + resp);
 		return resp;
 	}
 
