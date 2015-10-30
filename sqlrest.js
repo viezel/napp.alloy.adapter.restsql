@@ -210,6 +210,10 @@ function apiCall(_options, _callback) {
 			cleanup();
 		};
 		
+		if (_options.beforeOpen) {
+			_options.beforeOpen(xhr);
+		}
+		
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
 
