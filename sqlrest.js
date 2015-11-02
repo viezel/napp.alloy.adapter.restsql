@@ -433,17 +433,17 @@ function Sync(method, model, opts) {
 
 				// save data locally when server returned an error
 				if (!_response.localOnly && params.disableSaveDataLocallyOnServerError) {
+					params.returnErrorResponse && _.isFunction(params.error) && params.error(_response);
 					logger(DEBUG, "NOTICE: The data is not being saved locally");
 				} else {
 					resp = saveData();
-				}
-
-				if (_.isUndefined(_response.offline)) {
-					// error
-					_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
-				} else {
-					//offline - still a data success
-					_.isFunction(params.success) && params.success(resp);
+					if (_.isUndefined(_response.offline)) {
+						// error
+						_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			}
 		});
@@ -560,17 +560,17 @@ function Sync(method, model, opts) {
 
 				// save data locally when server returned an error
 				if (!_response.localOnly && params.disableSaveDataLocallyOnServerError) {
+					params.returnErrorResponse && _.isFunction(params.error) && params.error(_response);
 					logger(DEBUG, "NOTICE: The data is not being saved locally");
 				} else {
 					resp = saveData();
-				}
-
-				if (_.isUndefined(_response.offline)) {
-					//error
-					_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
-				} else {
-					//offline - still a data success
-					_.isFunction(params.success) && params.success(resp);
+					if (_.isUndefined(_response.offline)) {
+						// error
+						_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			}
 		});
@@ -594,17 +594,17 @@ function Sync(method, model, opts) {
 
 				// save data locally when server returned an error
 				if (!_response.localOnly && params.disableSaveDataLocallyOnServerError) {
+					params.returnErrorResponse && _.isFunction(params.error) && params.error(_response);
 					logger(DEBUG, "NOTICE: The data is not being deleted locally");
 				} else {
 					resp = deleteSQL();
-				}
-
-				if (_.isUndefined(_response.offline)) {
-					//error
-					_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
-				} else {
-					//offline - still a data success
-					_.isFunction(params.success) && params.success(resp);
+					if (_.isUndefined(_response.offline)) {
+						// error
+						_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+					} else {
+						//offline - still a data success
+						_.isFunction(params.success) && params.success(resp);
+					}
 				}
 			}
 		});
