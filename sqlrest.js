@@ -303,6 +303,9 @@ function Sync(method, model, opts) {
 		// before fethcing data from remote server - the adapter will return the stored data if enabled
 		initFetchWithLocalData : model.config.initFetchWithLocalData,
 
+        // If you want to load/save data from the local SQL database, then add the localOnly property.
+		localOnly : model.config.localOnly,
+
 		// If enabled - it will delete all the rows in the table on a successful fetch
 		deleteAllOnFetch : model.config.deleteAllOnFetch,
 
@@ -635,22 +638,27 @@ function Sync(method, model, opts) {
 			}
 		} else {//its an array of models
 			var currentModels = sqlCurrentModels();
+            // for speed up
+            db = Ti.Database.open(dbName);
+		    db.execute('BEGIN;');
 			for (var i in data) {
 				if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
 					//delete item
-					deleteSQL(data[i][model.idAttribute]);
+					deleteSQL(data[i][model.idAttribute], true);
 				} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
 					//item exists - update it
-					updateSQL(data[i]);
+					updateSQL(data[i], true);
 				} else {
 					//write data to local sql
-					createSQL(data[i]);
+					createSQL(data[i], true);
 				}
 			}
+            db.execute('COMMIT;');
+    		db.close();
 		}
 	}
 
-	function createSQL(data) {
+	function createSQL(data, dbOpend) {
 		var attrObj = {};
 		logger(DEBUG, "createSQL data:", data);
 
@@ -713,8 +721,10 @@ function Sync(method, model, opts) {
 		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
 
 		// execute the query and return the response
-		db = Ti.Database.open(dbName);
-		db.execute('BEGIN;');
+        if (!dbOpend) {
+		    db = Ti.Database.open(dbName);
+		    db.execute('BEGIN;');
+        }
 		db.execute(sqlInsert, values);
 
 		// get the last inserted id
@@ -729,8 +739,10 @@ function Sync(method, model, opts) {
 			}
 		}
 
-		db.execute('COMMIT;');
-		db.close();
+        if (!dbOpend) {
+    		db.execute('COMMIT;');
+    		db.close();
+        }
 
 		return attrObj;
 	}
@@ -804,7 +816,11 @@ function Sync(method, model, opts) {
                         replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
                         replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
                         //the json is ok
-                        o[fn] = JSON.parse(text);
+                        try {
+                            o[fn] = JSON.parse(text);
+                        } catch(e) {
+                            //
+                        }
                     }
                 }
 			});
@@ -826,14 +842,16 @@ function Sync(method, model, opts) {
 		db.close();
 
 		// shape response based on whether it's a model or collection
-		model.length = len;
+        if (isCollection && !params.add) {
+		    model.length = len;
+        }
 
 		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
 		resp = len === 1 ? values[0] : values;
 		return resp;
 	}
 
-	function updateSQL(data) {
+	function updateSQL(data, dbOpend) {
 		var attrObj = {};
 
 		logger(DEBUG, "updateSQL data: ", data);
@@ -876,20 +894,28 @@ function Sync(method, model, opts) {
 		logger(DEBUG, "updateSQL values: ", values);
 
 		// execute the update
-		db = Ti.Database.open(dbName);
+        if (!dbOpend) {
+        	db = Ti.Database.open(dbName);
+        }
 		db.execute(sql, values);
 
-		db.close();
+        if (!dbOpend) {
+        	db.close();
+        }
 
 		return attrObj;
 	}
 
-	function deleteSQL(id) {
+	function deleteSQL(id, dbOpend) {
 		var sql = 'DELETE FROM ' + table + ' WHERE ' + model.idAttribute + '=?';
 		// execute the delete
-		db = Ti.Database.open(dbName);
+        if (!dbOpend) {
+    		db = Ti.Database.open(dbName);
+        }
 		db.execute(sql, id || model.id);
-		db.close();
+        if (!dbOpend) {
+            db.close();
+        }
 
 		model.id = null;
 		return model.toJSON();
