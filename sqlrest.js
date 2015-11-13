@@ -143,7 +143,7 @@ function apiCall(_options, _callback) {
 		var xhr = Ti.Network.createHTTPClient({
 			timeout : _options.timeout,
 			cache : _options.cache,
-			validatesSecureCertificate: _options.validatesSecureCertificate
+			validatesSecureCertificate : _options.validatesSecureCertificate
 		});
 
 		xhr.onload = function() {
@@ -209,11 +209,11 @@ function apiCall(_options, _callback) {
 
 			cleanup();
 		};
-		
+
 		if (_options.beforeOpen) {
 			_options.beforeOpen(xhr);
 		}
-		
+
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
 
@@ -231,8 +231,6 @@ function apiCall(_options, _callback) {
 			var etag = getETag(_options.url);
 			etag && xhr.setRequestHeader('IF-NONE-MATCH', etag);
 		}
-
-        	
 
 		xhr.send(_options.data);
 	} else {
@@ -323,9 +321,9 @@ function Sync(method, model, opts) {
 		requestparams : model.config.requestparams,
 
 		// xhr settings
-		timeout: 7000,
-		cache: false,
-		validatesSecureCertificate: ENV_PROD ? true : false
+		timeout : 7000,
+		cache : false,
+		validatesSecureCertificate : ENV_PROD ? true : false
 	});
 
 	// REST API - set the type
@@ -382,14 +380,14 @@ function Sync(method, model, opts) {
 
 	// Extend the provided url params with those from the model config
 	if (_.isObject(params.urlparams) || model.config.URLPARAMS) {
-		if(_.isUndefined(params.urlparams)) {
+		if (_.isUndefined(params.urlparams)) {
 			params.urlparams = {};
 		}
 		_.extend(params.urlparams, _.isFunction(model.config.URLPARAMS) ? model.config.URLPARAMS() : model.config.URLPARAMS);
 	}
 
 	// parse url {requestparams}
-	_.each(params.requestparams, function(value,key) {
+	_.each(params.requestparams, function(value, key) {
 		params.url = params.url.replace('{' + key + '}', value ? escape(value) : '', "gi");
 	});
 
@@ -443,7 +441,7 @@ function Sync(method, model, opts) {
 					resp = saveData();
 					if (_.isUndefined(_response.offline)) {
 						// error
-						_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error(params.returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -521,7 +519,7 @@ function Sync(method, model, opts) {
 				}
 				if (_.isUndefined(_response.offline)) {
 					//error
-					_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+					_.isFunction(params.error) && params.error(params.returnErrorResponse ? _response : resp);
 				} else {
 					//offline - still a data success
 					_.isFunction(params.success) && params.success(resp);
@@ -570,7 +568,7 @@ function Sync(method, model, opts) {
 					resp = saveData();
 					if (_.isUndefined(_response.offline)) {
 						// error
-						_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error(params.returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -604,7 +602,7 @@ function Sync(method, model, opts) {
 					resp = deleteSQL();
 					if (_.isUndefined(_response.offline)) {
 						// error
-						_.isFunction(params.error) && params.error( params.returnErrorResponse ? _response : resp);
+						_.isFunction(params.error) && params.error(params.returnErrorResponse ? _response : resp);
 					} else {
 						//offline - still a data success
 						_.isFunction(params.success) && params.success(resp);
@@ -1274,14 +1272,16 @@ function installDatabase(config) {
 
 	// set remoteBackup status for iOS
 	if (config.adapter.remoteBackup === false && OS_IOS) {
-		Ti.API.debug('iCloud "do not backup" flag set for database "'+ dbFile + '"');
+		Ti.API.debug('iCloud "do not backup" flag set for database "' + dbFile + '"');
 		db.file.setRemoteBackup(false);
 	}
 
 	// compose config.columns from table definition in database
 	var rs = db.execute('pragma table_info("' + table + '");');
-	var columns = {}, cName, cType;
-	if(rs) {
+	var columns = {},
+	    cName,
+	    cType;
+	if (rs) {
 		while (rs.isValidRow()) {
 			cName = rs.fieldByName('name');
 			cType = rs.fieldByName('type');
@@ -1304,7 +1304,7 @@ function installDatabase(config) {
 			// see if it already has the ALLOY_ID_DEFAULT
 			if (cName === ALLOY_ID_DEFAULT && !config.adapter.idAttribute) {
 				config.adapter.idAttribute = ALLOY_ID_DEFAULT;
-			} else if(k === config.adapter.idAttribute) {
+			} else if (k === config.adapter.idAttribute) {
 				cType += " UNIQUE";
 			}
 			columns[cName] = cType;
@@ -1315,15 +1315,14 @@ function installDatabase(config) {
 	// make sure we have a unique id field
 	if (config.adapter.idAttribute) {
 		if (!_.contains(_.keys(config.columns), config.adapter.idAttribute)) {
-			throw 'config.adapter.idAttribute "' + config.adapter.idAttribute + '" not found in list of columns for table "' + table + '"\n' +
-				'columns: [' + _.keys(config.columns).join(',') + ']';
+			throw 'config.adapter.idAttribute "' + config.adapter.idAttribute + '" not found in list of columns for table "' + table + '"\n' + 'columns: [' + _.keys(config.columns).join(',') + ']';
 		}
 	} else {
 		Ti.API.info('No config.adapter.idAttribute specified for table "' + table + '"');
 		Ti.API.info('Adding "' + ALLOY_ID_DEFAULT + '" to uniquely identify rows');
 
 		var fullStrings = [],
-			colStrings = [];
+		    colStrings = [];
 		_.each(config.columns, function(type, name) {
 			colStrings.push(name);
 			fullStrings.push(name + ' ' + type);
@@ -1353,7 +1352,9 @@ module.exports.beforeModelCreate = function(config, name) {
 	}
 
 	// install database file, if specified
-	if (config.adapter.db_file) { installDatabase(config); }
+	if (config.adapter.db_file) {
+		installDatabase(config);
+	}
 	if (!config.adapter.idAttribute) {
 		Ti.API.info('No config.adapter.idAttribute specified for table "' + config.adapter.collection_name + '"');
 		Ti.API.info('Adding "' + ALLOY_ID_DEFAULT + '" to uniquely identify rows');
