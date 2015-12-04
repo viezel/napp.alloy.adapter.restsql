@@ -45,7 +45,7 @@ Simple add the following to your model in `PROJECT_FOLDER/app/models/`.
 			"columns": {
 				"id":"INTEGER PRIMARY KEY",
 				"title":"text",
-				"modified":text
+				"modified":"text"
 			},
 			"URL": "http://urlPathToRestAPIServer.com/api/modelname",
 			"debug": 1, //debug mode enabled
