@@ -138,7 +138,7 @@ function Migrator(config, transactionDb) {
 }
 
 function apiCall(_options, _callback) {
-	//adding localOnly
+    //adding localOnly
 	if (Ti.Network.online && !_options.localOnly) {
 		//we are online - talk with Rest API
 
@@ -648,40 +648,44 @@ function Sync(method, model, opts) {
             var currentModels = sqlCurrentModels();
             // Keeping App Responsive
             var deferred = Q.defer();
-            _.defer(iteration, data);
+            if (!data || !data.length) {
+                deferred.resolve();
+            } else {
+                _.defer(iteration, data);
+            }
             return deferred.promise;
 
-            function iteration(data, i, createQuery) {
+            function iteration(data, i, queryList) {
                 i || (i = 0);
-                createQuery = createQuery || [];
+                queryList = queryList || [];
 
                 if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
 					//delete item
-                    deleteSQL(data[i][model.idAttribute]);
+                    queryList = deleteSQL(data[i][model.idAttribute], queryList);
 				} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
 					//item exists - update it
-                    updateSQL(data[i]);
+                    queryList = updateSQL(data[i], queryList);
 				} else {
 					//write data to local sql
-                    createQuery = createSQL(data[i], createQuery);
+                    queryList = createSQL(data[i], queryList);
 				}
 
                 if(++i < data.length) {
-                    _.defer(iteration, data, i, createQuery);
+                    _.defer(iteration, data, i, queryList);
                 } else {
                     _.defer(function() {
-                        if (createQuery) {
-                                db = Ti.Database.open(dbName);
-                        		db.execute('BEGIN;');
-                                _.each(createQuery, function(query) {
-                                    try {
-                                        db.execute(query.sqlInsert, query.values);
-                                    } catch (e) {
-                                        //
-                                    }
-                                });
-                                db.execute('COMMIT;');
-                            	db.close();
+                        if (queryList && queryList.length) {
+                            db = Ti.Database.open(dbName);
+                    		db.execute('BEGIN;');
+                            _.each(queryList, function(query) {
+                                try {
+                                    db.execute(query.sql, query.values);
+                                } catch (e) {
+                                    //
+                                }
+                            });
+                            db.execute('COMMIT;');
+                        	db.close();
                         }
 
                         deferred.resolve();
@@ -691,7 +695,7 @@ function Sync(method, model, opts) {
 		}
 	}
 
-	function createSQL(data, createQuery) {
+	function createSQL(data, queryList) {
 		var attrObj = {};
 		logger(DEBUG, "createSQL data:", data);
 
@@ -753,12 +757,12 @@ function Sync(method, model, opts) {
         // Assemble create query
         var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
 
-		if (createQuery) {
-            createQuery.push({
-                "sqlInsert" : sqlInsert,
+		if (queryList) {
+            queryList.push({
+                "sql" : sqlInsert,
                 "values" : values
             });
-            return createQuery;
+            return queryList;
         } else {
     		// execute the query and return the response
             db = Ti.Database.open(dbName);
@@ -883,12 +887,12 @@ function Sync(method, model, opts) {
 		    model.length = len;
         }
 
-		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
+        logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
 		resp = len === 1 ? values[0] : values;
 		return resp;
 	}
 
-	function updateSQL(data) {
+	function updateSQL(data, queryList) {
 		var attrObj = {};
 
 		logger(DEBUG, "updateSQL data: ", data);
@@ -930,22 +934,40 @@ function Sync(method, model, opts) {
 		logger(DEBUG, "updateSQL sql query: " + sql);
 		logger(DEBUG, "updateSQL values: ", values);
 
-		// execute the update
-        db = Ti.Database.open(dbName);
-        db.execute(sql, values);
-        db.close();
+        if (queryList) {
+            queryList.push({
+                "sql" : sql,
+                "values" : values
+            });
+            return queryList;
+        } else {
+    		// execute the update
+            db = Ti.Database.open(dbName);
+            db.execute(sql, values);
+            db.close();
+        }
 
 		return attrObj;
 	}
 
-	function deleteSQL(id) {
+	function deleteSQL(id, queryList) {
 		var sql = 'DELETE FROM ' + table + ' WHERE ' + model.idAttribute + '=?';
-		// execute the delete
-        db = Ti.Database.open(dbName);
-		db.execute(sql, id || model.id);
-        db.close();
 
-		model.id = null;
+        if (queryList) {
+            queryList.push({
+                "sql" : sql,
+                "values" : id || model.id
+            });
+            return queryList;
+        } else {
+    		// execute the delete
+            db = Ti.Database.open(dbName);
+    		db.execute(sql, id || model.id);
+            db.close();
+
+    		model.id = null;
+        }
+
 		return model.toJSON();
 	}
 
