@@ -11,6 +11,8 @@ var _ = require('alloy/underscore')._,
     Backbone = Alloy.Backbone,
     moment = require('alloy/moment');
 
+var Q = require("q");
+
 // The database name used when none is specified in the
 // model configuration.
 var ALLOY_DB_DEFAULT = '_alloy_';
@@ -136,7 +138,7 @@ function Migrator(config, transactionDb) {
 }
 
 function apiCall(_options, _callback) {
-	//adding localOnly
+    //adding localOnly
 	if (Ti.Network.online && !_options.localOnly) {
 		//we are online - talk with Rest API
 
@@ -209,10 +211,6 @@ function apiCall(_options, _callback) {
 
 			cleanup();
 		};
-
-		if (_options.beforeOpen) {
-			_options.beforeOpen(xhr);
-		}
 
 		//Prepare the request
 		xhr.open(_options.type, _options.url);
@@ -304,6 +302,9 @@ function Sync(method, model, opts) {
 
 		// before fethcing data from remote server - the adapter will return the stored data if enabled
 		initFetchWithLocalData : model.config.initFetchWithLocalData,
+
+        // If you want to load/save data from the local SQL database, then add the localOnly property.
+		localOnly : model.config.localOnly,
 
 		// If enabled - it will delete all the rows in the table on a successful fetch
 		deleteAllOnFetch : model.config.deleteAllOnFetch,
@@ -489,6 +490,7 @@ function Sync(method, model, opts) {
 
 		apiCall(params, function(_response) {
 			if (_response.success) {
+
 				if (_response.code != 304) {
 
 					// delete all rows
@@ -505,12 +507,19 @@ function Sync(method, model, opts) {
 					var data = parseJSON(_response, params.parentNode);
 					if (!params.localOnly) {
 						//we dont want to manipulate the data on localOnly requests
-						saveData(data);
-					}
-				}
-				resp = readSQL(data);
-				_.isFunction(params.success) && params.success(resp);
-				model.trigger("fetch");
+						saveData(data).then(successFn);
+					} else {
+                        successFn();
+                    }
+				} else {
+    				successFn();
+                }
+
+                function successFn() {
+                    resp = readSQL(data);
+                    _.isFunction(params.success) && params.success(resp);
+                    model.trigger("fetch");
+                }
 			} else {
 				//error or offline - read local data
 				if (!params.localOnly && params.initFetchWithLocalData) {
@@ -636,23 +645,57 @@ function Sync(method, model, opts) {
 				return createSQL(data);
 			}
 		} else {//its an array of models
-			var currentModels = sqlCurrentModels();
-			for (var i in data) {
-				if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
+            var currentModels = sqlCurrentModels();
+            // Keeping App Responsive
+            var deferred = Q.defer();
+            if (!data || !data.length) {
+                deferred.resolve();
+            } else {
+                _.defer(iteration, data);
+            }
+            return deferred.promise;
+
+            function iteration(data, i, queryList) {
+                i || (i = 0);
+                queryList = queryList || [];
+
+                if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
 					//delete item
-					deleteSQL(data[i][model.idAttribute]);
+                    queryList = deleteSQL(data[i][model.idAttribute], queryList);
 				} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
 					//item exists - update it
-					updateSQL(data[i]);
+                    queryList = updateSQL(data[i], queryList);
 				} else {
 					//write data to local sql
-					createSQL(data[i]);
+                    queryList = createSQL(data[i], queryList);
 				}
-			}
+
+                if(++i < data.length) {
+                    _.defer(iteration, data, i, queryList);
+                } else {
+                    _.defer(function() {
+                        if (queryList && queryList.length) {
+                            db = Ti.Database.open(dbName);
+                    		db.execute('BEGIN;');
+                            _.each(queryList, function(query) {
+                                try {
+                                    db.execute(query.sql, query.values);
+                                } catch (e) {
+                                    //
+                                }
+                            });
+                            db.execute('COMMIT;');
+                        	db.close();
+                        }
+
+                        deferred.resolve();
+                    });
+                }
+            }
 		}
 	}
 
-	function createSQL(data) {
+	function createSQL(data, queryList) {
 		var attrObj = {};
 		logger(DEBUG, "createSQL data:", data);
 
@@ -711,28 +754,36 @@ function Sync(method, model, opts) {
 			values[_.indexOf(names, params.lastModifiedColumn)] = params.lastModifiedDateFormat ? moment().format(params.lastModifiedDateFormat) : moment().lang('en').zone('GMT').format('ddd, D MMM YYYY HH:mm:ss ZZ');
 		}
 
-		// Assemble create query
-		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
+        // Assemble create query
+        var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
 
-		// execute the query and return the response
-		db = Ti.Database.open(dbName);
-		db.execute('BEGIN;');
-		db.execute(sqlInsert, values);
+		if (queryList) {
+            queryList.push({
+                "sql" : sqlInsert,
+                "values" : values
+            });
+            return queryList;
+        } else {
+    		// execute the query and return the response
+            db = Ti.Database.open(dbName);
+    		db.execute('BEGIN;');
+    		db.execute(sqlInsert, values);
 
-		// get the last inserted id
-		if (model.id === null) {
-			var sqlId = "SELECT last_insert_rowid();";
-			var rs = db.execute(sqlId);
-			if (rs.isValidRow()) {
-				model.id = rs.field(0);
-				attrObj[model.idAttribute] = model.id;
-			} else {
-				Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
-			}
-		}
+    		// get the last inserted id
+    		if (model.id === null) {
+    			var sqlId = "SELECT last_insert_rowid();";
+    			var rs = db.execute(sqlId);
+    			if (rs.isValidRow()) {
+    				model.id = rs.field(0);
+    				attrObj[model.idAttribute] = model.id;
+    			} else {
+    				Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
+    			}
+    		}
 
-		db.execute('COMMIT;');
-		db.close();
+            db.execute('COMMIT;');
+        	db.close();
+        }
 
 		return attrObj;
 	}
@@ -799,7 +850,20 @@ function Sync(method, model, opts) {
 			// create list of rows returned from query
 			_.times(fc, function(c) {
 				var fn = rs.fieldName(c);
-				o[fn] = rs.fieldByName(fn);
+                var text = rs.fieldByName(fn);
+                o[fn] = text;
+                if (text && _.isString(text)) {
+                    if (/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').
+                        replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+                        replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+                        //the json is ok
+                        try {
+                            o[fn] = JSON.parse(text);
+                        } catch(e) {
+                            //
+                        }
+                    }
+                }
 			});
 			values.push(o);
 
@@ -819,14 +883,16 @@ function Sync(method, model, opts) {
 		db.close();
 
 		// shape response based on whether it's a model or collection
-		model.length = len;
+        if (isCollection && !params.add) {
+		    model.length = len;
+        }
 
-		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
+        logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
 		resp = len === 1 ? values[0] : values;
 		return resp;
 	}
 
-	function updateSQL(data) {
+	function updateSQL(data, queryList) {
 		var attrObj = {};
 
 		logger(DEBUG, "updateSQL data: ", data);
@@ -868,23 +934,40 @@ function Sync(method, model, opts) {
 		logger(DEBUG, "updateSQL sql query: " + sql);
 		logger(DEBUG, "updateSQL values: ", values);
 
-		// execute the update
-		db = Ti.Database.open(dbName);
-		db.execute(sql, values);
-
-		db.close();
+        if (queryList) {
+            queryList.push({
+                "sql" : sql,
+                "values" : values
+            });
+            return queryList;
+        } else {
+    		// execute the update
+            db = Ti.Database.open(dbName);
+            db.execute(sql, values);
+            db.close();
+        }
 
 		return attrObj;
 	}
 
-	function deleteSQL(id) {
+	function deleteSQL(id, queryList) {
 		var sql = 'DELETE FROM ' + table + ' WHERE ' + model.idAttribute + '=?';
-		// execute the delete
-		db = Ti.Database.open(dbName);
-		db.execute(sql, id || model.id);
-		db.close();
 
-		model.id = null;
+        if (queryList) {
+            queryList.push({
+                "sql" : sql,
+                "values" : id || model.id
+            });
+            return queryList;
+        } else {
+    		// execute the delete
+            db = Ti.Database.open(dbName);
+    		db.execute(sql, id || model.id);
+            db.close();
+
+    		model.id = null;
+        }
+
 		return model.toJSON();
 	}
 
