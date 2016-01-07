@@ -1169,7 +1169,17 @@ function _buildQuery(table, opts, operation) {
 		sql += ' EXCEPT ' + _buildQuery(opts.EXCEPT);
 	}
 
-	// order by and limit should be in the end of the statement
+	// group by, order by and limit should be in the end of the statement
+	if (opts.groupBy) {
+		var group;
+		if (_.isArray(opts.groupBy)) {
+			group = opts.groupBy.join(', ');
+		} else {
+			group = opts.groupBy;
+		}
+
+		sql += ' GROUP BY ' + group;
+	}
 	if (opts.orderBy) {
 		var order;
 		if (_.isArray(opts.orderBy)) {
