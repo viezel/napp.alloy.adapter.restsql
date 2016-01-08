@@ -358,6 +358,9 @@ function infiniteCallback(e) {
 
 ## Changelog
 
+**v0.3.4** 
+Using defer(underscore.js) at saveData() for prevent block event, and transaction more efficient. Keeping App Responsive.
+
 **v0.3.2** 
 Bugfix for httpheader must be set after xhr.open() but before xhr.send(). 
 

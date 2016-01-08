@@ -1,7 +1,7 @@
 /**
  * SQL Rest Adapter for Titanium Alloy
  * @author Mads Møller
- * @version 0.3.3
+ * @version 0.3.4
  * Copyright Napp ApS
  * www.napp.dk
  */
@@ -323,7 +323,7 @@ function Sync(method, model, opts) {
 		// xhr settings
 		timeout : 7000,
 		cache : false,
-		validatesSecureCertificate : ENV_PROD ? true : false
+		validatesSecureCertificate : ENV_PRODUCTION ? true : false
 	});
 
 	// REST API - set the type
@@ -505,12 +505,19 @@ function Sync(method, model, opts) {
 					var data = parseJSON(_response, params.parentNode);
 					if (!params.localOnly) {
 						//we dont want to manipulate the data on localOnly requests
-						saveData(data);
+						saveData(data, successFn);
+					} else {
+						successFn();
 					}
+				} else {
+					successFn();
 				}
-				resp = readSQL(data);
-				_.isFunction(params.success) && params.success(resp);
-				model.trigger("fetch");
+
+				function successFn() {
+					resp = readSQL(data);
+					_.isFunction(params.success) && params.success(resp);
+					model.trigger("fetch");
+				}
 			} else {
 				//error or offline - read local data
 				if (!params.localOnly && params.initFetchWithLocalData) {
@@ -616,7 +623,7 @@ function Sync(method, model, opts) {
 	/////////////////////////////////////////////
 	//SQL INTERFACE
 	/////////////////////////////////////////////
-	function saveData(data) {
+	function saveData(data, callback) {
 		if (!data && !isCollection) {
 			data = model.toJSON();
 		}
@@ -637,22 +644,54 @@ function Sync(method, model, opts) {
 			}
 		} else {//its an array of models
 			var currentModels = sqlCurrentModels();
-			for (var i in data) {
+			// Keeping App Responsive
+			if (!data || !data.length) {
+				callback && callback();
+			} else {
+				_.defer(iteration, data);
+			}
+
+			function iteration(data, i, queryList) {
+				i || (i = 0);
+				queryList = queryList || [];
+
 				if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
 					//delete item
-					deleteSQL(data[i][model.idAttribute]);
+					queryList = deleteSQL(data[i][model.idAttribute], queryList);
 				} else if (_.indexOf(currentModels, data[i][model.idAttribute]) != -1) {
 					//item exists - update it
-					updateSQL(data[i]);
+					queryList = updateSQL(data[i], queryList);
 				} else {
 					//write data to local sql
-					createSQL(data[i]);
+					queryList = createSQL(data[i], queryList);
+				}
+
+				if(++i < data.length) {
+					_.defer(iteration, data, i, queryList);
+				} else {
+					_.defer(function() {
+						if (queryList && queryList.length) {
+							db = Ti.Database.open(dbName);
+							db.execute('BEGIN;');
+							_.each(queryList, function(query) {
+								try {
+									db.execute(query.sql, query.values);
+								} catch (e) {
+									//
+								}
+							});
+							db.execute('COMMIT;');
+							db.close();
+						}
+
+						callback && callback();
+					});
 				}
 			}
 		}
 	}
 
-	function createSQL(data) {
+	function createSQL(data, queryList) {
 		var attrObj = {};
 		logger(DEBUG, "createSQL data:", data);
 
@@ -714,25 +753,33 @@ function Sync(method, model, opts) {
 		// Assemble create query
 		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
 
-		// execute the query and return the response
-		db = Ti.Database.open(dbName);
-		db.execute('BEGIN;');
-		db.execute(sqlInsert, values);
+		if (queryList) {
+			queryList.push({
+				"sql" : sqlInsert,
+				"values" : values
+			});
+			return queryList;
+		} else {
+			// execute the query and return the response
+			db = Ti.Database.open(dbName);
+			db.execute('BEGIN;');
+			db.execute(sqlInsert, values);
 
-		// get the last inserted id
-		if (model.id === null) {
-			var sqlId = "SELECT last_insert_rowid();";
-			var rs = db.execute(sqlId);
-			if (rs.isValidRow()) {
-				model.id = rs.field(0);
-				attrObj[model.idAttribute] = model.id;
-			} else {
-				Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
+			// get the last inserted id
+			if (model.id === null) {
+				var sqlId = "SELECT last_insert_rowid();";
+				var rs = db.execute(sqlId);
+				if (rs.isValidRow()) {
+					model.id = rs.field(0);
+					attrObj[model.idAttribute] = model.id;
+				} else {
+					Ti.API.warn('Unable to get ID from database for model: ' + model.toJSON());
+				}
 			}
-		}
 
-		db.execute('COMMIT;');
-		db.close();
+			db.execute('COMMIT;');
+			db.close();
+		}
 
 		return attrObj;
 	}
@@ -819,14 +866,16 @@ function Sync(method, model, opts) {
 		db.close();
 
 		// shape response based on whether it's a model or collection
-		model.length = len;
+		if (isCollection && !params.add) {
+			model.length = len;
+		}
 
 		logger(DEBUG, "\n******************************\n readSQL db read complete: " + len + " models \n******************************");
 		resp = len === 1 ? values[0] : values;
 		return resp;
 	}
 
-	function updateSQL(data) {
+	function updateSQL(data, queryList) {
 		var attrObj = {};
 
 		logger(DEBUG, "updateSQL data: ", data);
@@ -868,23 +917,40 @@ function Sync(method, model, opts) {
 		logger(DEBUG, "updateSQL sql query: " + sql);
 		logger(DEBUG, "updateSQL values: ", values);
 
-		// execute the update
-		db = Ti.Database.open(dbName);
-		db.execute(sql, values);
-
-		db.close();
+		if (queryList) {
+			queryList.push({
+				"sql" : sql,
+				"values" : values
+			});
+			return queryList;
+		} else {
+			// execute the update
+			db = Ti.Database.open(dbName);
+			db.execute(sql, values);
+			db.close();
+		}
 
 		return attrObj;
 	}
 
-	function deleteSQL(id) {
+	function deleteSQL(id, queryList) {
 		var sql = 'DELETE FROM ' + table + ' WHERE ' + model.idAttribute + '=?';
-		// execute the delete
-		db = Ti.Database.open(dbName);
-		db.execute(sql, id || model.id);
-		db.close();
 
-		model.id = null;
+		if (queryList) {
+			queryList.push({
+				"sql" : sql,
+				"values" : id || model.id
+			});
+			return queryList;
+		} else {
+			// execute the delete
+			db = Ti.Database.open(dbName);
+			db.execute(sql, id || model.id);
+			db.close();
+
+			model.id = null;
+		}
+
 		return model.toJSON();
 	}
 
