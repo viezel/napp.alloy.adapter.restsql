@@ -323,7 +323,7 @@ function Sync(method, model, opts) {
 		// xhr settings
 		timeout : 7000,
 		cache : false,
-		validatesSecureCertificate : ENV_PROD ? true : false
+		validatesSecureCertificate : ENV_PRODUCTION ? true : false
 	});
 
 	// REST API - set the type
