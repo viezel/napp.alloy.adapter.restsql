@@ -1,6 +1,6 @@
 {
   "name": "alloy-sync-sqlrest",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "SQL & RestAPI Sync Adapter for Titanium Alloy",
   "author": {
     "name": "Mads Møller",
