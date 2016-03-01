@@ -1026,7 +1026,7 @@ function Sync(method, model, opts) {
 	function parseJSON(_response, parentNode) {
 		var data = _response.responseJSON;
 		if (!_.isUndefined(parentNode)) {
-			data = _.isFunction(parentNode) ? parentNode(data) : traverseProperties(data, parentNode);
+			data = _.isFunction(parentNode) ? parentNode(data, opts) : traverseProperties(data, parentNode);
 		}
 		logger(DEBUG, "server response: ", data);
 		return data;
