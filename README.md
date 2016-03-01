@@ -153,7 +153,7 @@ http://www.google.com/calendar/feeds/developer-calendar@google.com/public/full?a
 *Custom parsing:*
 			
 ```javascript
-parentNode: function (data) {
+parentNode: function (data, options) {
 	// check if its a collection
 	if (_.isArray(data)) {	
 		var entries = [];
@@ -165,6 +165,7 @@ parentNode: function (data) {
 			entry.endTime = _entry.gd$when[0].endTime;
 			entry.title = _entry.title.$t;
 			entry.content = _entry.content.$t;
+			entry.myCustomPropertyFromFetchOpts = options.query
 	
 			entries.push(entry);
 		});
@@ -357,6 +358,9 @@ function infiniteCallback(e) {
 ```
 
 ## Changelog
+
+**v0.3.5** 
+Pass fetch options paramter to `parentNode` function
 
 **v0.3.4** 
 Using defer(underscore.js) at saveData() for prevent block event, and transaction more efficient. Keeping App Responsive.
