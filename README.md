@@ -272,7 +272,7 @@ collection.fetch({
 ### ETag
 
 This feature will only work if your server supports ETags. If you have no idea what this is, then consult your server admin.
-Start be enabling this feature in the model config, like the following:
+Start by enabling this feature in the model config, like the following:
 
 	config: {
 		...
