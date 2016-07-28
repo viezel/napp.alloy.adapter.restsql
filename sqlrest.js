@@ -654,7 +654,11 @@ function Sync(method, model, opts) {
 			function iteration(data, i, queryList) {
 				i || (i = 0);
 				queryList = queryList || [];
-
+				
+				if (_.isUndefined(data[i])){
+					return;
+				}
+				
 				if (!_.isUndefined(data[i][model.deletedAttribute]) && data[i][model.deletedAttribute] == true) {
 					//delete item
 					queryList = deleteSQL(data[i][model.idAttribute], queryList);
