@@ -7,6 +7,10 @@
     "email": "mm@napp.dk"
   },
   "homepage": "https://github.com/viezel/napp.alloy.adapter.restsql",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/viezel/napp.alloy.adapter.restsql.git"
+  },
   "bugs": {
     "url": "https://github.com/viezel/napp.alloy.adapter.restsql/issues"
   },
