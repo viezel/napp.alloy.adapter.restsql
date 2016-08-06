@@ -652,7 +652,7 @@ function Sync(method, model, opts) {
 			}
 
 			function iteration(data, i, queryList) {
-				i || (i = 0);
+				i = _.isNumber(i) ? i : 0;
 				queryList = queryList || [];
 				
 				if (_.isUndefined(data[i])){
@@ -757,7 +757,7 @@ function Sync(method, model, opts) {
 		// Assemble create query
 		var sqlInsert = "INSERT INTO " + table + " (" + names.join(",") + ") VALUES (" + q.join(",") + ");";
 
-		if (queryList) {
+		if (!_.isUndefined(queryList) && _.isFunction(queryList.push)) {
 			queryList.push({
 				"sql" : sqlInsert,
 				"values" : values
