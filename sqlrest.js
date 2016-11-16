@@ -1286,6 +1286,9 @@ function Migrate(Model) {
 	migrator.db = db;
 	db.execute('BEGIN;');
 
+	
+	migrator.createTable(config);
+
 	// iterate through all migrations based on the current and requested state,
 	// applying all appropriate migrations, in order, to the database.
 	if (migrations.length) {
@@ -1318,8 +1321,6 @@ function Migrate(Model) {
 				context[funcName](migrator);
 			}
 		}
-	} else {
-		migrator.createTable(config);
 	}
 
 	// update the saved migration in the db
