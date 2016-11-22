@@ -642,6 +642,7 @@ function Sync(method, model, opts) {
 				//write data to local sql
 				return createSQL(data);
 			}
+			callback && callback();
 		} else {//its an array of models
 			var currentModels = sqlCurrentModels();
 			// Keeping App Responsive
